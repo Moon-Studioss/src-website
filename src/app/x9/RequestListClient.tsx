@@ -91,55 +91,33 @@ export function RequestListClient({ initialRequests, autoDeleteTimer }: { initia
   return (
     <div className="space-y-6">
       {/* Top Bar Filters */}
-      <div className="flex flex-wrap gap-4 text-sm font-semibold text-[var(--mute)]">
-        <button 
-          onClick={() => setFilterStatus("new")}
-          className={filterStatus === "new" ? "text-[var(--ink)]" : "hover:text-[var(--ink)]"}
-        >
-          New {counts.new}
-        </button>
-        <span>·</span>
-        <button 
-          onClick={() => setFilterStatus("reviewing")}
-          className={filterStatus === "reviewing" ? "text-[var(--ink)]" : "hover:text-[var(--ink)]"}
-        >
-          Reviewing {counts.reviewing}
-        </button>
-        <span>·</span>
-        <button 
-          onClick={() => setFilterStatus("accepted")}
-          className={filterStatus === "accepted" ? "text-[var(--ink)]" : "hover:text-[var(--ink)]"}
-        >
-          Accepted {counts.accepted}
-        </button>
-        <span>·</span>
-        <button 
-          onClick={() => setFilterStatus("in_progress")}
-          className={filterStatus === "in_progress" ? "text-[var(--ink)]" : "hover:text-[var(--ink)]"}
-        >
-          In Progress {counts.in_progress}
-        </button>
-        <span>·</span>
-        <button 
-          onClick={() => setFilterStatus("completed")}
-          className={filterStatus === "completed" ? "text-[var(--ink)]" : "hover:text-[var(--ink)]"}
-        >
-          Completed {counts.completed}
-        </button>
-        <span>·</span>
-        <button 
-          onClick={() => setFilterStatus("rejected")}
-          className={filterStatus === "rejected" ? "text-[var(--ink)]" : "hover:text-[var(--ink)]"}
-        >
-          Rejected {counts.rejected}
-        </button>
-        <span>·</span>
-        <button 
-          onClick={() => setFilterStatus("all")}
-          className={filterStatus === "all" ? "text-[var(--ink)]" : "hover:text-[var(--ink)]"}
-        >
-          All {counts.all}
-        </button>
+      <div className="flex overflow-x-auto gap-2 pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+        {[
+          { id: "all", label: "All", count: counts.all },
+          { id: "new", label: "New", count: counts.new },
+          { id: "reviewing", label: "Reviewing", count: counts.reviewing },
+          { id: "accepted", label: "Accepted", count: counts.accepted },
+          { id: "in_progress", label: "In Progress", count: counts.in_progress },
+          { id: "completed", label: "Completed", count: counts.completed },
+          { id: "rejected", label: "Rejected", count: counts.rejected },
+        ].map(filter => (
+          <button
+            key={filter.id}
+            onClick={() => setFilterStatus(filter.id)}
+            className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-semibold border transition-all flex items-center gap-2 ${
+              filterStatus === filter.id 
+                ? "bg-[var(--ink)] text-white border-[var(--ink)] shadow-md" 
+                : "bg-white text-[var(--mute)] border-gray-200 hover:border-gray-400 hover:text-[var(--ink)] shadow-sm"
+            }`}
+          >
+            {filter.label} 
+            <span className={`px-1.5 py-0.5 rounded-full text-[10px] leading-none ${
+              filterStatus === filter.id ? "bg-white/20 text-white" : "bg-gray-100 text-gray-500"
+            }`}>
+              {filter.count}
+            </span>
+          </button>
+        ))}
       </div>
 
       <div className="flex flex-wrap gap-4 items-center justify-between">

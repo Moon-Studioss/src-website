@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect, useRef } from "react";
 import {
   addProduct, updateProduct, deleteProduct,
   toggleProductStock, addCategory, deleteCategory,
 } from "./actions";
-import { Package, Tag, Plus, Pencil, Trash2, CheckCircle2, XCircle, Star, StarOff, X } from "lucide-react";
+import { Package, Tag, Plus, Pencil, Trash2, CheckCircle2, XCircle, Star, StarOff, X, ChevronDown, Check } from "lucide-react";
 import type { Product, ProductCategory } from "@/lib/db/schema";
 
 type Props = {
@@ -16,6 +16,59 @@ type Props = {
 const emptyForm = {
   name: "", description: "", price: "", category: "", images: "", inStock: true, featured: false,
 };
+
+function CustomSelect({ value, onChange, options, placeholder = "Select...", className = "min-w-[140px]" }: { 
+  value: string, 
+  onChange: (val: string) => void, 
+  options: {value: string, label: string}[],
+  placeholder?: string,
+  className?: string
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  const selectedOption = options.find(o => o.value === value);
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        onClick={() => setOpen(!open)}
+        className={`flex items-center justify-between gap-2 text-sm border px-3 py-1.5 rounded outline-none bg-white shadow-sm transition-colors hover:bg-gray-50 focus:border-[var(--ink)] ${className}`}
+        style={{ borderColor: "var(--rule)", color: "var(--ink)" }}
+        type="button"
+      >
+        <span className="truncate">{selectedOption ? selectedOption.label : placeholder}</span>
+        <ChevronDown size={14} className={`text-[var(--mute)] transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
+      </button>
+
+      {open && (
+        <div className="absolute top-full left-0 mt-1 w-full min-w-[160px] max-h-60 overflow-y-auto bg-white border rounded-lg shadow-xl z-50 py-1 animate-in fade-in slide-in-from-top-2 duration-150" style={{ borderColor: "var(--rule)" }}>
+          {options.map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => { onChange(opt.value); setOpen(false); }}
+              type="button"
+              className={`w-full text-left px-3 py-2 text-sm flex items-center justify-between transition-colors ${value === opt.value ? 'bg-gray-50 font-semibold text-[var(--ink)]' : 'text-[var(--mute)] hover:bg-gray-50 hover:text-[var(--ink)]'}`}
+            >
+              <span className="truncate">{opt.label}</span>
+              {value === opt.value && <Check size={14} className="text-[var(--ink)] shrink-0 ml-2" />}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function StoreAdminClient({ initialProducts, initialCategories }: Props) {
   const [products, setProducts] = useState<Product[]>(initialProducts);
@@ -174,26 +227,24 @@ export function StoreAdminClient({ initialProducts, initialCategories }: Props) 
         <div className="space-y-4">
           {/* Filters */}
           <div className="flex flex-wrap gap-3 items-center">
-            <select
+            <CustomSelect
               value={filterCat}
-              onChange={e => setFilterCat(e.target.value)}
-              className="text-sm border px-3 py-1.5 rounded outline-none bg-white"
-              style={{ borderColor: "var(--rule)", color: "var(--ink)" }}
-            >
-              <option value="all">All Categories</option>
-              {allAvailableCats.map(name => <option key={name} value={name}>{name}</option>)}
-              <option value="">Uncategorized</option>
-            </select>
-            <select
+              onChange={setFilterCat}
+              options={[
+                { value: "all", label: "All Categories" },
+                ...allAvailableCats.map(name => ({ value: name, label: name })),
+                { value: "", label: "Uncategorized" }
+              ]}
+            />
+            <CustomSelect
               value={filterStock}
-              onChange={e => setFilterStock(e.target.value)}
-              className="text-sm border px-3 py-1.5 rounded outline-none bg-white"
-              style={{ borderColor: "var(--rule)", color: "var(--ink)" }}
-            >
-              <option value="all">All Stock</option>
-              <option value="in">In Stock</option>
-              <option value="out">Out of Stock</option>
-            </select>
+              onChange={setFilterStock}
+              options={[
+                { value: "all", label: "All Stock" },
+                { value: "in", label: "In Stock" },
+                { value: "out", label: "Out of Stock" }
+              ]}
+            />
             <span className="text-xs text-[var(--mute)]">{filtered.length} item{filtered.length !== 1 ? "s" : ""}</span>
           </div>
 
@@ -205,34 +256,60 @@ export function StoreAdminClient({ initialProducts, initialCategories }: Props) 
                 No products yet. Click "Add Product" to get started.
               </div>
             ) : (
-              <table className="w-full text-sm">
-                <thead className="bg-gray-50 border-b text-[var(--mute)]" style={{ borderColor: "var(--rule)" }}>
-                  <tr>
-                    <th className="text-left px-4 py-3 font-semibold">Product</th>
+              <table className="w-full text-sm block sm:table">
+                <thead className="bg-gray-50 border-b text-[var(--mute)] hidden sm:table-header-group" style={{ borderColor: "var(--rule)" }}>
+                  <tr className="block sm:table-row">
+                    <th className="text-left px-4 py-3 font-semibold block sm:table-cell">Product</th>
                     <th className="text-left px-4 py-3 font-semibold hidden sm:table-cell">Category</th>
-                    <th className="text-left px-4 py-3 font-semibold">Price</th>
-                    <th className="text-left px-4 py-3 font-semibold">Stock</th>
-                    <th className="text-right px-4 py-3 font-semibold">Actions</th>
+                    <th className="text-left px-4 py-3 font-semibold hidden sm:table-cell">Price</th>
+                    <th className="text-left px-4 py-3 font-semibold hidden sm:table-cell">Stock</th>
+                    <th className="text-right px-4 py-3 font-semibold hidden sm:table-cell">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y" style={{ borderColor: "var(--rule)" }}>
+                <tbody className="divide-y block sm:table-row-group" style={{ borderColor: "var(--rule)" }}>
                   {filtered.map(p => (
-                    <tr key={p.id} className="hover:bg-gray-50/50 transition-colors">
-                      <td className="px-4 py-4 w-full">
-                        <div className="flex items-center gap-4">
+                    <tr key={p.id} className="hover:bg-gray-50/50 transition-colors block sm:table-row border-b sm:border-b-0 last:border-b-0">
+                      <td className="px-4 py-4 w-full block sm:table-cell">
+                        <div className="flex items-start sm:items-center gap-4">
                           {(p.images as string[])?.[0] ? (
-                            <img src={(p.images as string[])[0]} alt={p.name} className="w-12 h-12 shrink-0 object-cover rounded-lg border bg-white" style={{ borderColor: "var(--rule)" }} />
+                            <img src={(p.images as string[])[0]} alt={p.name} className="w-16 h-16 sm:w-12 sm:h-12 shrink-0 object-cover rounded-lg border bg-white" style={{ borderColor: "var(--rule)" }} />
                           ) : (
-                            <div className="w-12 h-12 shrink-0 bg-gray-50 rounded-lg border flex items-center justify-center bg-white" style={{ borderColor: "var(--rule)" }}>
+                            <div className="w-16 h-16 sm:w-12 sm:h-12 shrink-0 bg-gray-50 rounded-lg border flex items-center justify-center bg-white" style={{ borderColor: "var(--rule)" }}>
                               <Package size={20} className="text-gray-400" />
                             </div>
                           )}
-                          <div className="min-w-0">
+                          <div className="min-w-0 flex-1">
                             <div className="font-semibold text-[var(--ink)] flex items-center gap-1.5 truncate">
                               {p.name}
                               {p.featured && <Star size={14} className="text-yellow-500 fill-yellow-500 shrink-0" />}
                             </div>
                             <div className="text-xs text-[var(--mute)] mt-0.5">ID: {p.id.slice(0, 8)}</div>
+
+                            {/* Mobile-only Details */}
+                            <div className="sm:hidden mt-3 space-y-3">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="font-bold text-[var(--ink)] text-sm">{formatPrice(p.price)}</span>
+                                {p.category && <span className="text-[10px] bg-gray-100 text-[var(--mute)] px-2 py-0.5 rounded uppercase tracking-wider font-semibold">{p.category}</span>}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={() => handleToggleStock(p.id, p.inStock)}
+                                  className={`flex-1 py-1.5 text-xs font-bold rounded-lg border transition-all ${
+                                    p.inStock
+                                      ? "bg-green-50 text-green-700 border-green-200"
+                                      : "bg-red-50 text-red-600 border-red-200"
+                                  }`}
+                                >
+                                  {p.inStock ? "In Stock" : "Out of Stock"}
+                                </button>
+                                <button onClick={() => openEdit(p)} className="p-1.5 px-3 text-[var(--mute)] bg-gray-50 border rounded-lg">
+                                  <Pencil size={14} />
+                                </button>
+                                <button onClick={() => confirmDelete(p.id)} className="p-1.5 px-3 text-red-500 bg-red-50 border border-red-100 rounded-lg">
+                                  <Trash2 size={14} />
+                                </button>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </td>
@@ -243,8 +320,8 @@ export function StoreAdminClient({ initialProducts, initialCategories }: Props) 
                           <span className="text-xs text-gray-300">—</span>
                         )}
                       </td>
-                      <td className="px-4 py-4 font-semibold text-[var(--ink)] align-middle whitespace-nowrap">{formatPrice(p.price)}</td>
-                      <td className="px-4 py-4 align-middle">
+                      <td className="px-4 py-4 font-semibold text-[var(--ink)] align-middle whitespace-nowrap hidden sm:table-cell">{formatPrice(p.price)}</td>
+                      <td className="px-4 py-4 align-middle hidden sm:table-cell">
                         <button
                           onClick={() => handleToggleStock(p.id, p.inStock)}
                           className={`text-xs font-bold px-3 py-1.5 rounded-full border transition-all whitespace-nowrap ${
@@ -256,7 +333,7 @@ export function StoreAdminClient({ initialProducts, initialCategories }: Props) 
                           {p.inStock ? "In Stock" : "Out of Stock"}
                         </button>
                       </td>
-                      <td className="px-4 py-4 align-middle">
+                      <td className="px-4 py-4 align-middle hidden sm:table-cell">
                         <div className="flex items-center gap-2 justify-end">
                           <button onClick={() => openEdit(p)} className="p-2 text-[var(--mute)] hover:text-[var(--ink)] hover:bg-gray-100 rounded-lg transition-colors border border-transparent hover:border-gray-200" title="Edit">
                             <Pencil size={15} />
@@ -371,24 +448,23 @@ export function StoreAdminClient({ initialProducts, initialCategories }: Props) 
               </div>
               <div className="space-y-2">
                 <label className="block text-xs font-semibold text-[var(--mute)] uppercase tracking-wider">Category</label>
-                <select
-                  value={
-                    allAvailableCats.includes(form.category) ? form.category : (form.category === "" ? "" : "custom")
-                  }
-                  onChange={e => {
-                    if (e.target.value === "custom") {
-                      setForm(f => ({ ...f, category: " " })); // Space triggers the custom input box
+                <CustomSelect
+                  value={allAvailableCats.includes(form.category) ? form.category : (form.category === "" ? "" : "custom")}
+                  onChange={val => {
+                    if (val === "custom") {
+                      setForm(f => ({ ...f, category: " " }));
                     } else {
-                      setForm(f => ({ ...f, category: e.target.value }));
+                      setForm(f => ({ ...f, category: val }));
                     }
                   }}
-                  className="w-full text-sm border px-3 py-2 rounded-xl outline-none focus:border-[var(--ink)] transition-colors bg-white"
-                  style={{ borderColor: "var(--rule)", color: "var(--ink)" }}
-                >
-                  <option value="">Select an existing category...</option>
-                  {allAvailableCats.map(name => <option key={name} value={name}>{name}</option>)}
-                  <option value="custom">➕ Create new category...</option>
-                </select>
+                  className="w-full py-2"
+                  placeholder="Select an existing category..."
+                  options={[
+                    { value: "", label: "Select an existing category..." },
+                    ...allAvailableCats.map(name => ({ value: name, label: name })),
+                    { value: "custom", label: "➕ Create new category..." }
+                  ]}
+                />
 
                 {(!allAvailableCats.includes(form.category) && form.category !== "") && (
                   <input

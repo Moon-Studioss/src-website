@@ -27,7 +27,7 @@ export function AdminLayoutClient({ children, storageWidget }: { children: React
         <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between relative">
           <div className="flex items-center z-10">
             <Link href="/x9" className="font-bold text-[var(--ink)] tracking-tight text-lg">
-              SRC <span className="font-normal">Dashboard</span>
+              SRC<span className="hidden sm:inline font-normal"> Dashboard</span>
             </Link>
           </div>
           
@@ -40,8 +40,10 @@ export function AdminLayoutClient({ children, storageWidget }: { children: React
             </Link>
           </nav>
 
-          <div className="flex items-center z-10 gap-3">
-            <SettingsModal />
+          <div className="flex items-center z-10 gap-2 sm:gap-3">
+            <div className="hidden sm:block">
+              <SettingsModal />
+            </div>
             {storageWidget}
             <button 
               onClick={handleLogout}
@@ -76,6 +78,7 @@ export function AdminLayoutClient({ children, storageWidget }: { children: React
               Store
             </Link>
             <hr style={{ borderColor: "var(--rule)" }} />
+            <SettingsModal mode="menu-item" onClick={() => setIsMobileMenuOpen(false)} />
             <button 
               onClick={() => {
                 setIsMobileMenuOpen(false);

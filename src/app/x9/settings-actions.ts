@@ -15,6 +15,7 @@ export async function getSettings() {
       db.insert(settings).values({
         adminPassword: process.env.ADMIN_PASSWORD!,
         isUnderConstruction: false,
+        isStoreUnderConstruction: false,
       }).returning()
     );
   }
@@ -24,19 +25,25 @@ export async function getSettings() {
 export async function saveAllSettings({ 
   newPassword, 
   isUnderConstruction, 
+  isStoreUnderConstruction,
   autoDeleteTimer,
+  overdueDeleteTimer,
   whatsappTemplate
 }: { 
   newPassword?: string, 
   isUnderConstruction: boolean, 
+  isStoreUnderConstruction?: boolean,
   autoDeleteTimer: number,
+  overdueDeleteTimer: number,
   whatsappTemplate?: string
 }) {
   const currentSettings = await getSettings();
   
   const updates: any = {
     isUnderConstruction,
-    autoDeleteTimer
+    isStoreUnderConstruction: isStoreUnderConstruction ?? false,
+    autoDeleteTimer,
+    overdueDeleteTimer
   };
   
   if (whatsappTemplate) {
@@ -53,5 +60,6 @@ export async function saveAllSettings({
     
   // Revalidate routes to immediately reflect changes
   revalidatePath("/", "layout");
+  revalidatePath("/store");
   revalidatePath("/x9");
 }

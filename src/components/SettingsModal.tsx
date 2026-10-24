@@ -3,12 +3,14 @@
 import { useState, useEffect } from "react";
 import { Settings } from "lucide-react";
 import { getSettings, saveAllSettings } from "../app/x9/settings-actions";
-import { X, Save, ShieldAlert, CheckCircle2, Lock, Clock, Eye, EyeOff } from "lucide-react";
+import { X, Save, ShieldAlert, CheckCircle2, Lock, Clock, Eye, EyeOff, ShoppingBag } from "lucide-react";
 
-export function SettingsModal() {
+export function SettingsModal({ mode = 'icon', onClick }: { mode?: 'icon' | 'menu-item', onClick?: () => void }) {
   const [isOpen, setIsOpen] = useState(false);
   const [isUnderConstruction, setIsUnderConstruction] = useState(false);
+  const [isStoreUnderConstruction, setIsStoreUnderConstruction] = useState(false);
   const [autoDeleteTimer, setAutoDeleteTimer] = useState(2880);
+  const [overdueDeleteTimer, setOverdueDeleteTimer] = useState(15);
   const [whatsappTemplate, setWhatsappTemplate] = useState("Hi {name}, this is regarding your project request {ref} ({title}). I can take this up. Let's discuss the details.");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -22,7 +24,9 @@ export function SettingsModal() {
       setLoading(true);
       getSettings().then((s) => {
         setIsUnderConstruction(s.isUnderConstruction);
+        setIsStoreUnderConstruction(s.isStoreUnderConstruction ?? false);
         setAutoDeleteTimer(s.autoDeleteTimer ?? 2880);
+        setOverdueDeleteTimer(s.overdueDeleteTimer ?? 15);
         setWhatsappTemplate(s.whatsappTemplate ?? "Hi {name}, this is regarding your project request {ref} ({title}). I can take this up. Let's discuss the details.");
         setLoading(false);
       });
@@ -40,7 +44,9 @@ export function SettingsModal() {
       await saveAllSettings({
         newPassword: newPassword || undefined,
         isUnderConstruction,
+        isStoreUnderConstruction,
         autoDeleteTimer,
+        overdueDeleteTimer,
         whatsappTemplate
       });
       
@@ -58,13 +64,22 @@ export function SettingsModal() {
 
   return (
     <>
-      <button 
-        onClick={() => setIsOpen(true)}
-        className="p-1.5 mr-2 rounded-md hover:bg-gray-100 text-gray-500 hover:text-gray-900 transition-colors"
-        title="Admin Settings"
-      >
-        <Settings size={20} />
-      </button>
+      {mode === 'icon' ? (
+        <button 
+          onClick={() => { setIsOpen(true); onClick?.(); }}
+          className="p-1.5 sm:mr-2 rounded-md hover:bg-gray-100 text-gray-500 hover:text-gray-900 transition-colors"
+          title="Admin Settings"
+        >
+          <Settings size={20} />
+        </button>
+      ) : (
+        <button 
+          onClick={() => { setIsOpen(true); onClick?.(); }}
+          className="text-left font-semibold text-[var(--mute)] hover:text-[var(--ink)] transition-colors w-full"
+        >
+          Settings
+        </button>
+      )}
 
       {isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
@@ -86,9 +101,9 @@ export function SettingsModal() {
                 </div>
               ) : (
                 <>
-                  <div className="flex flex-col md:flex-row gap-8">
+                  <div className="flex flex-col md:flex-row gap-8 items-start">
                     {/* LEFT COLUMN */}
-                    <div className="flex-1 space-y-6">
+                    <div className="flex-1 space-y-4 max-h-[380px] overflow-y-auto pr-2 scroll-smooth [scrollbar-width:thin] [scrollbar-color:#DDE3EC_transparent] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-gray-400">
                       {/* Under Construction Toggle */}
                       <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border">
                         <div>
@@ -111,12 +126,34 @@ export function SettingsModal() {
                         </label>
                       </div>
 
+                      {/* Store Under Construction Toggle */}
+                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border">
+                        <div>
+                          <h3 className="font-semibold text-[var(--ink)] flex items-center gap-1.5">
+                            <ShoppingBag size={16} className="text-orange-500" />
+                            Store Under Construction
+                          </h3>
+                          <p className="text-sm text-gray-500 mt-1">
+                            Hide store in navigation &amp; show under construction on /store.
+                          </p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input 
+                            type="checkbox" 
+                            className="sr-only peer" 
+                            checked={isStoreUnderConstruction}
+                            onChange={(e) => setIsStoreUnderConstruction(e.target.checked)}
+                          />
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500"></div>
+                        </label>
+                      </div>
+
                       {/* Auto Delete Timer Dropdown */}
                       <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border">
                         <div>
                           <h3 className="font-semibold text-[var(--ink)] flex items-center gap-1.5">
                             <Clock size={16} className="text-blue-500" />
-                            Auto-Delete Timer
+                            Auto-Delete (Rejected)
                           </h3>
                           <p className="text-sm text-gray-500 mt-1">
                             Time before rejected projects are deleted.
@@ -133,6 +170,29 @@ export function SettingsModal() {
                           <option value={1440}>1 Day</option>
                           <option value={2880}>2 Days</option>
                           <option value={10080}>7 Days</option>
+                        </select>
+                      </div>
+
+                      {/* Overdue Auto-Delete Dropdown */}
+                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border">
+                        <div>
+                          <h3 className="font-semibold text-[var(--ink)] flex items-center gap-1.5">
+                            <Clock size={16} className="text-red-500" />
+                            Auto-Delete (Overdue)
+                          </h3>
+                          <p className="text-sm text-gray-500 mt-1">
+                            Days overdue before a project is deleted.
+                          </p>
+                        </div>
+                        <select
+                          value={overdueDeleteTimer}
+                          onChange={(e) => setOverdueDeleteTimer(Number(e.target.value))}
+                          className="ml-4 p-2 border rounded-md outline-none focus:border-[var(--ink)] text-sm cursor-pointer bg-white"
+                        >
+                          <option value={7}>7 Days</option>
+                          <option value={15}>15 Days</option>
+                          <option value={30}>30 Days</option>
+                          <option value={60}>60 Days</option>
                         </select>
                       </div>
 
@@ -156,7 +216,7 @@ export function SettingsModal() {
                     </div>
 
                     {/* VERTICAL DIVIDER */}
-                    <div className="hidden md:block w-px bg-gray-200"></div>
+                    <div className="hidden md:block w-px self-stretch bg-gray-200"></div>
 
                     {/* RIGHT COLUMN */}
                     <div className="flex-1 space-y-6">
