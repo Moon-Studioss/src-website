@@ -1,65 +1,53 @@
 import Link from "next/link";
+import { CircleCheck } from "lucide-react";
 import { CopyButton } from "./CopyButton";
+import { ConfettiOnMount } from "@/components/Confetti";
+import { getSettings } from "@/app/x9/settings-actions";
+import { isStoreClosed } from "@/lib/utils/helpers";
 
 export const metadata = {
   title: "Request Submitted — SRC e-solutions",
 };
 
-export default async function SubmittedPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ code?: string }>;
-}) {
+export default async function SubmittedPage({ searchParams }: { searchParams: Promise<{ code?: string }> }) {
   const { code: rawCode } = await searchParams;
   const code = rawCode || "SRC-XXXX";
+  const settings = await getSettings();
 
   return (
-    <div className="min-h-screen bg-[var(--paper)] flex flex-col items-center pt-24 px-6">
-      <div className="max-w-md w-full bg-white border p-8 space-y-6" style={{ borderColor: "var(--rule)" }}>
-        
-        <div className="flex items-center gap-3 text-[var(--go)] font-bold text-xl">
-          <span>✓</span>
-          <span>Request submitted</span>
-        </div>
+    <div className="min-h-screen bg-[var(--paper)] grid-texture-faint px-4 pt-16 md:pt-28 pb-16">
+      <div className="relative max-w-md mx-auto">
+        <ConfettiOnMount />
+        <div className="rounded-3xl bg-white border border-[var(--rule)] overflow-hidden" style={{ boxShadow: "0 24px 48px -28px rgb(22 35 58 / .5)" }}>
+          <div className="bg-[var(--hi)] px-6 py-5 flex items-center gap-3">
+            <CircleCheck size={28} className="text-[var(--ink)]" />
+            <h1 className="font-display text-2xl font-extrabold text-[var(--ink)]">Request sent!</h1>
+          </div>
+          <div className="p-6">
+            <p className="text-sm font-semibold text-[var(--ink)]">Your reference code</p>
+            <div className="mt-2 flex items-center justify-between gap-3 rounded-2xl border-2 border-dashed border-[var(--rule)] px-4 py-3">
+              <span className="mono text-2xl font-bold tracking-[0.12em] text-[var(--ink)]">{code}</span>
+              <CopyButton text={code} />
+            </div>
+            <p className="mt-3 text-sm text-[var(--mute)]">Take a screenshot or copy the code. You need it to track your project.</p>
 
-        <div className="space-y-2 pt-4">
-          <p className="text-sm font-semibold text-[var(--ink)]">Your reference code:</p>
-          <div className="flex justify-between items-center border p-4 bg-gray-50" style={{ borderColor: "var(--rule)" }}>
-            <span className="font-mono text-xl tracking-widest font-bold text-[var(--ink)]">{code}</span>
-            <CopyButton text={code} />
+            <div className="mt-6 pt-6 border-t border-dashed border-[var(--rule)] text-sm text-[var(--mute)] space-y-2">
+              <p className="font-semibold text-[var(--ink)]">What happens next</p>
+              <p>We read your request, usually within 2–3 working days. If we can take it, we call or WhatsApp you on the number you gave.</p>
+            </div>
+
+            <div className="mt-6 flex flex-col gap-3">
+              <Link href={`/status/${code}`} className="press h-12 rounded-full bg-[var(--ink)] text-white font-semibold grid place-items-center">
+                Track my project
+              </Link>
+              {!isStoreClosed(settings) && (
+                <Link href="/store" className="press h-12 rounded-full border border-[var(--rule)] text-[var(--ink)] font-semibold grid place-items-center">
+                  Need parts while you wait? Visit the store
+                </Link>
+              )}
+            </div>
           </div>
         </div>
-
-        <div className="pt-6 border-t space-y-4" style={{ borderColor: "var(--rule)" }}>
-          <p className="text-sm font-bold text-[var(--ink)]">What happens next:</p>
-          <ol className="text-sm text-[var(--mute)] space-y-3 list-decimal list-outside ml-4">
-            <li>We review your request (usually within 2–3 working days).</li>
-            <li>If we can take it up, we'll contact you on the number provided.</li>
-            <li>If you don't hear from us, it means we're fully booked or it wasn't the right fit.</li>
-          </ol>
-        </div>
-
-        <div className="pt-6 border-t" style={{ borderColor: "var(--rule)" }}>
-          <p className="text-sm font-bold text-red-600 bg-red-50 p-3 rounded mb-4 border border-red-100">
-            NOTE: Keep this reference code for future requirements. It is strictly required to check your request status.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-3">
-            <Link 
-              href={`/status?code=${code}`}
-              className="px-4 py-2 bg-[var(--ink)] text-white text-sm font-semibold text-center transition-opacity hover:opacity-90"
-            >
-              Check status →
-            </Link>
-            <Link 
-              href="/submit"
-              className="px-4 py-2 border text-[var(--ink)] text-sm font-semibold text-center transition-colors hover:bg-gray-50"
-              style={{ borderColor: "var(--rule)" }}
-            >
-              Submit another request
-            </Link>
-          </div>
-        </div>
-
       </div>
     </div>
   );

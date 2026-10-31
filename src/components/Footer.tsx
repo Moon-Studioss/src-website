@@ -1,48 +1,28 @@
-"use client";
+import Link from "next/link";
+import { MapPin } from "lucide-react";
 
 export default function Footer() {
   return (
-    <footer
-      className="py-10"
-      style={{ background: "var(--ink)", borderTop: "1px solid rgba(255,255,255,0.08)" }}
-    >
-      <div className="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-
-        {/* Wordmark */}
+    <footer className="py-10 bg-[var(--ink)] border-t border-white/10">
+      <div className="max-w-6xl mx-auto px-4 md:px-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="flex items-baseline gap-1 select-none">
-          <span
-            className="text-base tracking-tight font-bold text-white"
-            style={{ letterSpacing: "-0.03em" }}
-          >
-            SRC
-          </span>
-          <span
-            className="text-sm font-normal"
-            style={{ color: "rgba(255,255,255,0.45)", letterSpacing: "-0.01em" }}
-          >
-            e-solutions
-          </span>
+          <span className="font-display text-xl font-extrabold text-white">SRC</span>
+          <span className="text-white/45">e-solutions</span>
         </div>
-
-        {/* Links */}
-        <div className="flex items-center gap-6">
-          <div
-            className="text-xs flex items-center gap-1.5 cursor-default"
-            style={{ color: "rgba(255,255,255,0.45)" }}
-          >
-            {/* Location icon */}
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-              <circle cx="12" cy="10" r="3"></circle>
-            </svg>
-            Location
-          </div>
-        </div>
-
-        {/* Copyright */}
-        <span className="text-xs" style={{ color: "rgba(255,255,255,0.25)" }}>
-          © 2026 SRC e-solutions
-        </span>
+        <ul className="flex flex-wrap gap-x-6 gap-y-3 text-sm text-white/60">
+          <li>
+            <a
+              href="https://maps.app.goo.gl/eCW1CFXnV53qjFi26?g_st=aw"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 hover:text-white"
+            >
+              <MapPin size={15} /> Visit our office, Vijayawada
+            </a>
+          </li>
+          <li><Link href="/status" className="hover:text-white">Track project</Link></li>
+        </ul>
+        <span className="text-xs text-white/30">© {new Date().getFullYear()} SRC e-solutions</span>
       </div>
     </footer>
   );

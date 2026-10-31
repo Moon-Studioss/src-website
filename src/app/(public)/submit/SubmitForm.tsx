@@ -7,6 +7,7 @@ import { UploadButton } from "@/components/ui/uploadthing";
 import { DayPicker } from "react-day-picker";
 import "react-day-picker/style.css";
 import { format } from "date-fns";
+import { DeadlineSlider } from "./DeadlineSlider";
 import { Calendar as CalendarIcon, AppWindow, Smartphone, BrainCircuit, Cpu, Monitor, Compass } from "lucide-react";
 
 const CATEGORIES = [
@@ -173,10 +174,10 @@ export function SubmitForm() {
   const hasFile = formData.files.length > 0;
   const hasBranchAnswers = Object.keys(formData.branchAnswers).length > 0;
   
-  let completenessMessage = "Add a few more lines so he can understand your idea";
+  let completenessMessage = "Add a few more lines so we can understand your idea";
   let completenessColor = "var(--flag)";
   if (wordCount >= 80 && hasFile && (hasBranchAnswers || formData.category === 'unsure')) {
-    completenessMessage = "Very clear — he probably won't need to call you";
+    completenessMessage = "Very clear — we probably won't need to call you";
     completenessColor = "var(--go)";
   } else if (wordCount >= 30 || hasFile) {
     completenessMessage = "Good — this explains the basic idea";
@@ -187,22 +188,25 @@ export function SubmitForm() {
   const effectiveStep = formData.category ? step : 1;
 
   return (
-    <div className="w-full relative overflow-hidden pb-20">
+    <div className="w-full relative overflow-x-clip pb-6">
       {/* Progress Bar */}
       <div className="flex items-center gap-2 mb-8">
         {[1, 2, 3, 4].map((s) => (
           <div
             key={s}
-            className="h-1 flex-1 transition-all duration-300"
+            className="h-1.5 flex-1 rounded-full transition-all duration-300"
             style={{ background: s <= effectiveStep ? "var(--ink)" : "var(--rule)" }}
           />
         ))}
       </div>
 
-      <div className="text-sm font-semibold mb-8 text-[var(--mute)]">Step {effectiveStep} of 4</div>
+      <div className="flex justify-between text-sm font-semibold mb-8 text-[var(--mute)]">
+        <span>Step {effectiveStep} of 4</span>
+        <span className="font-normal">About 3 minutes</span>
+      </div>
 
       {error && (
-        <div className="mb-6 p-4 rounded bg-red-50 text-red-700 text-sm border border-red-200">
+        <div className="mb-6 p-4 rounded-xl bg-red-50 text-red-700 text-sm border border-red-200">
           {error}
         </div>
       )}
@@ -216,7 +220,7 @@ export function SubmitForm() {
               <button
                 key={cat.id}
                 onClick={() => handleCategorySelect(cat.id)}
-                className="flex items-center gap-4 p-6 text-left border hover:border-[var(--ink)] transition-colors duration-150 bg-white"
+                className="press flex items-center gap-4 p-5 md:p-6 text-left rounded-2xl border hover:border-[var(--ink)] transition-colors duration-150 bg-white"
                 style={{ borderColor: formData.category === cat.id ? "var(--ink)" : "var(--rule)" }}
               >
                 <div className="text-[var(--ink)] opacity-80">{cat.icon}</div>
@@ -239,7 +243,7 @@ export function SubmitForm() {
               value={formData.title}
               onChange={(e) => updateForm("title", e.target.value.toUpperCase())}
               placeholder="e.g. Smart Attendance System"
-              className="w-full p-3 border outline-none focus:border-[var(--ink)] transition-colors"
+              className="w-full p-3 rounded-xl border outline-none focus:border-[var(--ink)] transition-colors"
               style={{ borderColor: "var(--rule)", background: "var(--paper)" }}
             />
           </div>
@@ -251,7 +255,7 @@ export function SubmitForm() {
               onChange={(e) => updateForm("description", e.target.value)}
               placeholder="e.g. A face recognition system for our college lab that automatically marks attendance when a student enters the room. The system should store records and let the HOD download reports."
               rows={5}
-              className="w-full p-3 border outline-none focus:border-[var(--ink)] transition-colors"
+              className="w-full p-3 rounded-xl border outline-none focus:border-[var(--ink)] transition-colors"
               style={{ borderColor: "var(--rule)", background: "var(--paper)" }}
             />
             <div className="flex justify-between items-center text-xs mt-1">
@@ -267,7 +271,7 @@ export function SubmitForm() {
                 <button
                   key={del.id}
                   onClick={() => updateForm("deliverable", del.id)}
-                  className="p-3 text-left border text-sm transition-colors"
+                  className="press p-3 rounded-xl text-left border text-sm transition-colors"
                   style={{
                     borderColor: formData.deliverable === del.id ? "var(--ink)" : "var(--rule)",
                     background: formData.deliverable === del.id ? "var(--ink)" : "var(--paper)",
@@ -287,7 +291,7 @@ export function SubmitForm() {
                 <label className="text-sm font-semibold text-[var(--ink)]">Do you have a reference website or design?</label>
                 <div className="flex gap-3">
                   {["Yes", "No", "I'll share one"].map((opt) => (
-                    <button key={opt} onClick={() => updateBranch("hasDesign", opt)} className={`px-4 py-2 border text-sm ${formData.branchAnswers["hasDesign"] === opt ? 'border-[var(--ink)] bg-[var(--ink)] text-white' : 'border-[var(--rule)] bg-white text-[var(--ink)]'}`}>
+                    <button key={opt} onClick={() => updateBranch("hasDesign", opt)} className={`press px-4 py-2 rounded-full border text-sm ${formData.branchAnswers["hasDesign"] === opt ? 'border-[var(--ink)] bg-[var(--ink)] text-white' : 'border-[var(--rule)] bg-white text-[var(--ink)]'}`}>
                       {opt}
                     </button>
                   ))}
@@ -297,7 +301,7 @@ export function SubmitForm() {
                 <label className="text-sm font-semibold text-[var(--ink)]">Does it need a login system or admin panel?</label>
                 <div className="flex gap-3">
                   {["Yes", "No", "Not sure"].map((opt) => (
-                    <button key={opt} onClick={() => updateBranch("needsLogin", opt)} className={`px-4 py-2 border text-sm ${formData.branchAnswers["needsLogin"] === opt ? 'border-[var(--ink)] bg-[var(--ink)] text-white' : 'border-[var(--rule)] bg-white text-[var(--ink)]'}`}>
+                    <button key={opt} onClick={() => updateBranch("needsLogin", opt)} className={`press px-4 py-2 rounded-full border text-sm ${formData.branchAnswers["needsLogin"] === opt ? 'border-[var(--ink)] bg-[var(--ink)] text-white' : 'border-[var(--rule)] bg-white text-[var(--ink)]'}`}>
                       {opt}
                     </button>
                   ))}
@@ -312,7 +316,7 @@ export function SubmitForm() {
                 <label className="text-sm font-semibold text-[var(--ink)]">Which platform?</label>
                 <div className="flex gap-3">
                   {["Android", "iOS", "Both"].map((opt) => (
-                    <button key={opt} onClick={() => updateBranch("platform", opt)} className={`px-4 py-2 border text-sm ${formData.branchAnswers["platform"] === opt ? 'border-[var(--ink)] bg-[var(--ink)] text-white' : 'border-[var(--rule)] bg-white text-[var(--ink)]'}`}>
+                    <button key={opt} onClick={() => updateBranch("platform", opt)} className={`press px-4 py-2 rounded-full border text-sm ${formData.branchAnswers["platform"] === opt ? 'border-[var(--ink)] bg-[var(--ink)] text-white' : 'border-[var(--rule)] bg-white text-[var(--ink)]'}`}>
                       {opt}
                     </button>
                   ))}
@@ -322,7 +326,7 @@ export function SubmitForm() {
                 <label className="text-sm font-semibold text-[var(--ink)]">Does it need a backend or database?</label>
                 <div className="flex gap-3">
                   {["Yes", "No", "Not sure"].map((opt) => (
-                    <button key={opt} onClick={() => updateBranch("needsBackend", opt)} className={`px-4 py-2 border text-sm ${formData.branchAnswers["needsBackend"] === opt ? 'border-[var(--ink)] bg-[var(--ink)] text-white' : 'border-[var(--rule)] bg-white text-[var(--ink)]'}`}>
+                    <button key={opt} onClick={() => updateBranch("needsBackend", opt)} className={`press px-4 py-2 rounded-full border text-sm ${formData.branchAnswers["needsBackend"] === opt ? 'border-[var(--ink)] bg-[var(--ink)] text-white' : 'border-[var(--rule)] bg-white text-[var(--ink)]'}`}>
                       {opt}
                     </button>
                   ))}
@@ -337,7 +341,7 @@ export function SubmitForm() {
                 <label className="text-sm font-semibold text-[var(--ink)]">Do you already have a dataset?</label>
                 <div className="flex gap-3">
                   {["Yes", "No", "Partially"].map((opt) => (
-                    <button key={opt} onClick={() => updateBranch("hasDataset", opt)} className={`px-4 py-2 border text-sm ${formData.branchAnswers["hasDataset"] === opt ? 'border-[var(--ink)] bg-[var(--ink)] text-white' : 'border-[var(--rule)] bg-white text-[var(--ink)]'}`}>
+                    <button key={opt} onClick={() => updateBranch("hasDataset", opt)} className={`press px-4 py-2 rounded-full border text-sm ${formData.branchAnswers["hasDataset"] === opt ? 'border-[var(--ink)] bg-[var(--ink)] text-white' : 'border-[var(--rule)] bg-white text-[var(--ink)]'}`}>
                       {opt}
                     </button>
                   ))}
@@ -347,7 +351,7 @@ export function SubmitForm() {
                 <label className="text-sm font-semibold text-[var(--ink)]">Does it need a UI?</label>
                 <div className="flex flex-wrap gap-3">
                   {["Needs a UI", "Notebook/demo is fine", "Not sure"].map((opt) => (
-                    <button key={opt} onClick={() => updateBranch("needsUi", opt)} className={`px-4 py-2 border text-sm ${formData.branchAnswers["needsUi"] === opt ? 'border-[var(--ink)] bg-[var(--ink)] text-white' : 'border-[var(--rule)] bg-white text-[var(--ink)]'}`}>
+                    <button key={opt} onClick={() => updateBranch("needsUi", opt)} className={`press px-4 py-2 rounded-full border text-sm ${formData.branchAnswers["needsUi"] === opt ? 'border-[var(--ink)] bg-[var(--ink)] text-white' : 'border-[var(--rule)] bg-white text-[var(--ink)]'}`}>
                       {opt}
                     </button>
                   ))}
@@ -362,7 +366,7 @@ export function SubmitForm() {
                 <label className="text-sm font-semibold text-[var(--ink)]">Who arranges the components — you or us?</label>
                 <div className="flex flex-wrap gap-3">
                   {["I will arrange", "You arrange (add to cost)", "Not sure"].map((opt) => (
-                    <button key={opt} onClick={() => updateBranch("hardwareSource", opt)} className={`px-4 py-2 border text-sm ${formData.branchAnswers["hardwareSource"] === opt ? 'border-[var(--ink)] bg-[var(--ink)] text-white' : 'border-[var(--rule)] bg-white text-[var(--ink)]'}`}>
+                    <button key={opt} onClick={() => updateBranch("hardwareSource", opt)} className={`press px-4 py-2 rounded-full border text-sm ${formData.branchAnswers["hardwareSource"] === opt ? 'border-[var(--ink)] bg-[var(--ink)] text-white' : 'border-[var(--rule)] bg-white text-[var(--ink)]'}`}>
                       {opt}
                     </button>
                   ))}
@@ -375,7 +379,7 @@ export function SubmitForm() {
                   value={formData.branchAnswers["existingHardware"] || ""}
                   onChange={(e) => updateBranch("existingHardware", e.target.value)}
                   placeholder="e.g. Arduino Uno, DHT11 sensor"
-                  className="w-full p-3 border outline-none focus:border-[var(--ink)] transition-colors"
+                  className="w-full p-3 rounded-xl border outline-none focus:border-[var(--ink)] transition-colors"
                   style={{ borderColor: "var(--rule)", background: "var(--paper)" }}
                 />
               </div>
@@ -388,7 +392,7 @@ export function SubmitForm() {
                 <label className="text-sm font-semibold text-[var(--ink)]">What platform must it run on?</label>
                 <div className="flex flex-wrap gap-3">
                   {["Windows", "Mac", "Linux", "Any"].map((opt) => (
-                    <button key={opt} onClick={() => updateBranch("platform", opt)} className={`px-4 py-2 border text-sm ${formData.branchAnswers["platform"] === opt ? 'border-[var(--ink)] bg-[var(--ink)] text-white' : 'border-[var(--rule)] bg-white text-[var(--ink)]'}`}>
+                    <button key={opt} onClick={() => updateBranch("platform", opt)} className={`press px-4 py-2 rounded-full border text-sm ${formData.branchAnswers["platform"] === opt ? 'border-[var(--ink)] bg-[var(--ink)] text-white' : 'border-[var(--rule)] bg-white text-[var(--ink)]'}`}>
                       {opt}
                     </button>
                   ))}
@@ -397,16 +401,16 @@ export function SubmitForm() {
             </div>
           )}
 
-          <div className="flex justify-between pt-6">
-            <button onClick={() => setStep(1)} className="px-6 py-3 border border-[var(--rule)] hover:bg-gray-50 text-[var(--ink)] font-semibold transition-colors">
-              ← Back
+          <div className="sticky bottom-0 z-20 -mx-6 px-6 py-3 bg-white/95 border-t border-[var(--rule)] flex justify-between gap-3 md:static md:mx-0 md:px-0 md:pt-6 md:border-0 md:bg-transparent" style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}>
+            <button onClick={() => setStep(1)} className="press h-12 px-6 rounded-full border border-[var(--rule)] bg-white hover:bg-gray-50 text-[var(--ink)] font-semibold transition-colors">
+              Back
             </button>
             <button 
               onClick={() => setStep(3)} 
               disabled={!validateStep2()}
-              className="px-6 py-3 bg-[var(--ink)] text-white font-semibold disabled:opacity-50 transition-colors"
+              className="press h-12 px-7 rounded-full bg-[var(--ink)] text-white font-semibold disabled:opacity-40 transition-colors"
             >
-              Continue →
+              Continue
             </button>
           </div>
         </div>
@@ -418,21 +422,19 @@ export function SubmitForm() {
           <h2 className="text-2xl font-bold text-[var(--ink)]">Logistics</h2>
           
           <div className="space-y-2 relative" ref={datePickerRef}>
-            <label className="text-sm font-semibold text-[var(--ink)]">Submission deadline *</label>
+            <p className="text-sm font-semibold text-[var(--ink)]">How many days until your deadline? *</p>
+            <DeadlineSlider deadline={formData.deadline} onChange={(iso) => updateForm("deadline", iso)} />
             <button
               type="button"
               onClick={() => setShowDatePicker(!showDatePicker)}
-              className="w-full p-3 border outline-none flex items-center justify-between transition-colors bg-[var(--paper)] text-left"
-              style={{ borderColor: "var(--rule)" }}
+              className="inline-flex items-center gap-2 text-sm font-semibold text-[var(--ink)] underline underline-offset-4"
             >
-              <span className={formData.deadline ? "text-[var(--ink)]" : "text-[var(--mute)]"}>
-                {formData.deadline ? format(new Date(formData.deadline), "PPP") : "Select a date..."}
-              </span>
-              <CalendarIcon className="w-5 h-5 text-[var(--mute)]" />
+              <CalendarIcon className="w-4 h-4" />
+              {formData.deadline ? `Exact date: ${format(new Date(formData.deadline), "PPP")}` : "Pick an exact date instead"}
             </button>
             
             {showDatePicker && (
-              <div className="absolute z-10 top-full mt-2 left-0 bg-white border p-3 shadow-lg" style={{ borderColor: "var(--rule)" }}>
+              <div className="absolute z-30 top-full mt-2 left-0 bg-white border rounded-2xl p-3 shadow-lg" style={{ borderColor: "var(--rule)" }}>
                 <DayPicker 
                   mode="single"
                   selected={formData.deadline ? new Date(formData.deadline) : undefined}
@@ -458,7 +460,7 @@ export function SubmitForm() {
             <select
               value={formData.budgetBand}
               onChange={(e) => updateForm("budgetBand", e.target.value)}
-              className="w-full p-3 border outline-none focus:border-[var(--ink)] transition-colors appearance-none"
+              className="w-full p-3 rounded-xl border outline-none focus:border-[var(--ink)] transition-colors appearance-none"
               style={{ borderColor: "var(--rule)", background: "var(--paper)" }}
             >
               <option value="" disabled>Select a range</option>
@@ -516,16 +518,16 @@ export function SubmitForm() {
             )}
           </div>
 
-          <div className="flex justify-between pt-6">
-            <button onClick={() => setStep(2)} className="px-6 py-3 border border-[var(--rule)] hover:bg-gray-50 text-[var(--ink)] font-semibold transition-colors">
-              ← Back
+          <div className="sticky bottom-0 z-20 -mx-6 px-6 py-3 bg-white/95 border-t border-[var(--rule)] flex justify-between gap-3 md:static md:mx-0 md:px-0 md:pt-6 md:border-0 md:bg-transparent" style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}>
+            <button onClick={() => setStep(2)} className="press h-12 px-6 rounded-full border border-[var(--rule)] bg-white hover:bg-gray-50 text-[var(--ink)] font-semibold transition-colors">
+              Back
             </button>
             <button 
               onClick={() => setStep(4)} 
               disabled={!validateStep3()}
-              className="px-6 py-3 bg-[var(--ink)] text-white font-semibold disabled:opacity-50 transition-colors"
+              className="press h-12 px-7 rounded-full bg-[var(--ink)] text-white font-semibold disabled:opacity-40 transition-colors"
             >
-              Continue →
+              Continue
             </button>
           </div>
         </div>
@@ -543,7 +545,7 @@ export function SubmitForm() {
                 type="text"
                 value={formData.studentName}
                 onChange={(e) => updateForm("studentName", e.target.value.toUpperCase())}
-                className="w-full p-3 border outline-none focus:border-[var(--ink)] transition-colors"
+                className="w-full p-3 rounded-xl border outline-none focus:border-[var(--ink)] transition-colors"
                 style={{ borderColor: "var(--rule)", background: "var(--paper)" }}
               />
             </div>
@@ -553,7 +555,7 @@ export function SubmitForm() {
                 type="text"
                 value={formData.college}
                 onChange={(e) => updateForm("college", e.target.value.toUpperCase())}
-                className="w-full p-3 border outline-none focus:border-[var(--ink)] transition-colors"
+                className="w-full p-3 rounded-xl border outline-none focus:border-[var(--ink)] transition-colors"
                 style={{ borderColor: "var(--rule)", background: "var(--paper)" }}
               />
             </div>
@@ -568,7 +570,7 @@ export function SubmitForm() {
                 placeholder="9876543210"
                 value={formData.phone}
                 onChange={(e) => updateForm("phone", e.target.value.replace(/\D/g, ""))}
-                className="w-full p-3 border outline-none focus:border-[var(--ink)] transition-colors"
+                className="w-full p-3 rounded-xl border outline-none focus:border-[var(--ink)] transition-colors"
                 style={{ borderColor: "var(--rule)", background: "var(--paper)" }}
               />
               <div className="flex items-center gap-2 mt-2">
@@ -592,7 +594,7 @@ export function SubmitForm() {
                   placeholder="9876543210"
                   value={formData.whatsapp}
                   onChange={(e) => updateForm("whatsapp", e.target.value.replace(/\D/g, ""))}
-                  className="w-full p-3 border outline-none focus:border-[var(--ink)] transition-colors"
+                  className="w-full p-3 rounded-xl border outline-none focus:border-[var(--ink)] transition-colors"
                   style={{ borderColor: "var(--rule)", background: "var(--paper)" }}
                 />
               </div>
@@ -606,7 +608,7 @@ export function SubmitForm() {
               placeholder="you@domain.com"
               value={formData.email}
               onChange={(e) => updateForm("email", e.target.value)}
-              className="w-full p-3 border outline-none focus:border-[var(--ink)] transition-colors"
+              className="w-full p-3 rounded-xl border outline-none focus:border-[var(--ink)] transition-colors"
               style={{ borderColor: "var(--rule)", background: "var(--paper)" }}
             />
           </div>
@@ -617,19 +619,19 @@ export function SubmitForm() {
               value={formData.extraNotes}
               onChange={(e) => updateForm("extraNotes", e.target.value)}
               rows={3}
-              className="w-full p-3 border outline-none focus:border-[var(--ink)] transition-colors"
+              className="w-full p-3 rounded-xl border outline-none focus:border-[var(--ink)] transition-colors"
               style={{ borderColor: "var(--rule)", background: "var(--paper)" }}
             />
           </div>
 
-          <div className="flex justify-between pt-6 border-t border-[var(--rule)]">
-            <button onClick={() => setStep(3)} className="px-6 py-3 border border-[var(--rule)] hover:bg-gray-50 text-[var(--ink)] font-semibold transition-colors">
-              ← Back
+          <div className="sticky bottom-0 z-20 -mx-6 px-6 py-3 bg-white/95 border-t border-[var(--rule)] flex justify-between gap-3 md:static md:mx-0 md:px-0 md:pt-6 md:bg-transparent" style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}>
+            <button onClick={() => setStep(3)} className="press h-12 px-6 rounded-full border border-[var(--rule)] bg-white hover:bg-gray-50 text-[var(--ink)] font-semibold transition-colors">
+              Back
             </button>
             <button 
               onClick={handleSubmit} 
               disabled={!validateStep4() || isSubmitting}
-              className="px-8 py-3 bg-[var(--ink)] text-white font-bold disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
+              className="press h-12 px-7 rounded-full bg-[var(--ink)] text-white font-bold disabled:opacity-40 transition-colors flex items-center justify-center gap-2"
             >
               {isSubmitting ? "Sending..." : "Send project request"}
             </button>

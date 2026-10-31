@@ -59,3 +59,6 @@ CLAUDE.md
 /sync_categories.ts
 /test-delete.ts
 *.scratch.*
+# Security audit notes (do not publish)
+SECURITY_AUDIT.md
+future-work/FEATURES.txt

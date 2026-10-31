@@ -41,7 +41,13 @@ export async function withRetry<T>(fn: () => Promise<T>, tries = 5): Promise<T> 
     try {
       return await fn();
     } catch (err) {
-      if (attempt === tries) throw err;
+      if (attempt === tries) {
+        // Drizzle's "Failed query" hides the real reason (network down, DB asleep…) in `cause`,
+        // often a WebSocket ErrorEvent whose readable text is in .message / .error
+        const cause = (err as { cause?: { message?: string; error?: unknown } })?.cause;
+        console.error(`[db] query failed after ${tries} tries:`, cause?.message || cause?.error || cause || err);
+        throw err;
+      }
       // Wait 1.5s between retries to give the serverless DB time to wake up.
       // Total potential wait: ~6 seconds.
       await new Promise(res => setTimeout(res, 1500));

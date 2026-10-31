@@ -1,386 +1,363 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { ShoppingCart, Package, Search, X, Plus, Minus, MessageCircle, Star, Tag } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { ShoppingBag, Package, Search, X, Plus, Minus, Star } from "lucide-react";
 import type { Product, ProductCategory } from "@/lib/db/schema";
+import { formatPrice } from "@/lib/utils/helpers";
 
 type CartItem = { product: Product; qty: number };
 
 type Props = {
   products: Product[];
   categories: ProductCategory[];
+  initialQuery?: string;
 };
 
 const WHATSAPP_NUMBER = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "919999999999";
 
-function formatPrice(paise: number) {
-  return `₹${(paise / 100).toLocaleString("en-IN")}`;
-}
-
 function buildWhatsAppMessage(items: CartItem[]): string {
-  const lines = items.map(
-    ({ product, qty }) =>
-      `• ${product.name} × ${qty} — ${formatPrice(product.price * qty)}`
-  );
+  const lines = items.map(({ product, qty }) => `• ${product.name} × ${qty} — ${formatPrice(product.price * qty)}`);
   const total = items.reduce((sum, { product, qty }) => sum + product.price * qty, 0);
   return encodeURIComponent(
     `Hi! I'd like to order the following components from SRC e-solutions:\n\n${lines.join("\n")}\n\nTotal: ${formatPrice(total)}\n\nPlease confirm availability and delivery details. Thank you!`
   );
 }
 
-export function StoreClient({ products, categories }: Props) {
+const HINT_KEY = "src-store-hint-seen";
+const markHintSeen = () => {
+  try { localStorage.setItem(HINT_KEY, "1"); } catch {}
+};
+
+const buzz = () => {
+  try { navigator.vibrate?.(12); } catch {}
+};
+
+export function StoreClient({ products, categories, initialQuery = "" }: Props) {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(initialQuery);
   const [selectedCat, setSelectedCat] = useState("all");
-  const [stockFilter, setStockFilter] = useState("all");
+  const [inStockOnly, setInStockOnly] = useState(false);
+  const [bump, setBump] = useState(0);
+  const [flippedId, setFlippedId] = useState<string | null>(null); // only one card flipped at a time
+
+  // First visit only: show "Tap a card to see details" briefly, then fade it out.
+  // Marked as seen only once it has really been shown (fade-out or first card tap).
+  const [hint, setHint] = useState(false);
+  useEffect(() => {
+    try {
+      if (localStorage.getItem(HINT_KEY)) return;
+    } catch {
+      return;
+    }
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time read of localStorage after hydration
+    setHint(true);
+    const t = setTimeout(() => {
+      setHint(false);
+      markHintSeen();
+    }, 3500);
+    return () => clearTimeout(t);
+  }, []);
+  const showHint = hint && flippedId === null; // tapping a card means they got it
 
   // ─── Cart helpers ─────────────────────────────────────────────────
-  const addToCart = (product: Product) => {
-    setCart(prev => {
-      const existing = prev.find(i => i.product.id === product.id);
-      if (existing) return prev.map(i => i.product.id === product.id ? { ...i, qty: i.qty + 1 } : i);
-      return [...prev, { product, qty: 1 }];
+  const qtyOf = (id: string) => cart.find((i) => i.product.id === id)?.qty ?? 0;
+
+  const changeQty = (product: Product, delta: number) => {
+    setCart((prev) => {
+      const existing = prev.find((i) => i.product.id === product.id);
+      if (!existing) return delta > 0 ? [...prev, { product, qty: 1 }] : prev;
+      return prev.map((i) => (i.product.id === product.id ? { ...i, qty: i.qty + delta } : i)).filter((i) => i.qty > 0);
     });
-  };
-
-  const removeFromCart = (id: string) => setCart(prev => prev.filter(i => i.product.id !== id));
-
-  const changeQty = (id: string, delta: number) => {
-    setCart(prev =>
-      prev
-        .map(i => i.product.id === id ? { ...i, qty: i.qty + delta } : i)
-        .filter(i => i.qty > 0)
-    );
+    if (delta > 0) {
+      buzz();
+      setBump((b) => b + 1);
+    }
   };
 
   const cartCount = cart.reduce((s, i) => s + i.qty, 0);
   const cartTotal = cart.reduce((s, i) => s + i.product.price * i.qty, 0);
+  const sheetOpen = cartOpen && cartCount > 0;
 
   const handleWhatsApp = () => {
-    const msg = buildWhatsAppMessage(cart);
-    window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${msg}`, "_blank");
-  };
-
-  const handleBuyNow = (product: Product) => {
-    const msg = encodeURIComponent(
-      `Hi! I'd like to order:\n\n• ${product.name} × 1 — ${formatPrice(product.price)}\n\nPlease confirm availability and delivery. Thank you!`
-    );
-    window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${msg}`, "_blank");
+    window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${buildWhatsAppMessage(cart)}`, "_blank");
   };
 
   // ─── Filtering ────────────────────────────────────────────────────
   const filtered = useMemo(() => {
-    const result = products.filter(p => {
-      if (selectedCat !== "all" && p.category !== (selectedCat || null)) return false;
-      if (stockFilter === "in" && !p.inStock) return false;
-      if (stockFilter === "out" && p.inStock) return false;
-      if (search) {
-        const q = search.toLowerCase();
-        if (!p.name.toLowerCase().includes(q) && !(p.description ?? "").toLowerCase().includes(q)) return false;
-      }
-      return true;
-    });
-    
-    return result.sort((a, b) => {
-      if (a.featured && !b.featured) return -1;
-      if (!a.featured && b.featured) return 1;
-      return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' });
-    });
-  }, [products, selectedCat, stockFilter, search]);
+    const q = search.trim().toLowerCase();
+    return products
+      .filter((p) => {
+        if (selectedCat !== "all" && p.category !== selectedCat) return false;
+        if (inStockOnly && !p.inStock) return false;
+        if (q && !p.name.toLowerCase().includes(q) && !(p.description ?? "").toLowerCase().includes(q)) return false;
+        return true;
+      })
+      .sort((a, b) => {
+        if (a.featured !== b.featured) return a.featured ? -1 : 1;
+        if (a.inStock !== b.inStock) return a.inStock ? -1 : 1;
+        return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" });
+      });
+  }, [products, selectedCat, inStockOnly, search]);
+
+  const chip = (active: boolean) =>
+    `press shrink-0 h-9 px-4 rounded-full text-sm font-semibold border transition-colors ${
+      active ? "bg-[var(--ink)] text-white border-[var(--ink)]" : "bg-white text-[var(--ink)] border-[var(--rule)]"
+    }`;
 
   return (
-    <div className="pt-14 pb-20">
-      {/* Premium Hero Banner */}
-      <section className="relative overflow-hidden border-b py-20 px-6 bg-white" style={{ borderColor: "var(--rule)" }}>
-        {/* Grid texture background */}
-        <div className="absolute inset-0 grid-texture-faint pointer-events-none" />
-        
-        {/* Subtle background decoration */}
-        <div className="absolute top-0 right-0 -mr-20 -mt-20 w-[600px] h-[600px] bg-blue-50/50 rounded-full blur-3xl opacity-50 pointer-events-none" />
-        
-        <div className="max-w-6xl mx-auto relative z-10">
-          <div className="max-w-xl">
-            <div className="inline-flex items-center gap-2 text-xs font-bold text-[var(--ink)] uppercase tracking-widest mb-6 border bg-white shadow-sm px-4 py-1.5 rounded-full" style={{ borderColor: "var(--rule)" }}>
-              <Package size={14} className="text-[var(--go)]" /> Components Store
-            </div>
-            <h1 className="text-4xl sm:text-6xl font-extrabold text-[var(--ink)] tracking-tight mb-5 leading-[1.1]">
-              Build It <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[var(--ink)] to-gray-500">Yourself.</span>
-            </h1>
-            <p className="text-[var(--mute)] text-lg mb-8 font-medium leading-relaxed max-w-md">
-              Microcontrollers, sensors, and modules for your next big project. Direct from SRC e-solutions.
-            </p>
-            <div className="flex items-center gap-3 text-base font-semibold text-[var(--ink)]">
-              <span className="flex items-center justify-center w-10 h-10 rounded-full bg-[#25D366]/10 text-[#25D366]">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/>
-                </svg>
-              </span>
-              <span>Fast WhatsApp Ordering</span>
-            </div>
-          </div>
-        </div>
+    <div className="pt-14 pb-24 md:pb-28">
+      <section className="max-w-6xl mx-auto px-4 md:px-6 pt-4 md:pt-12 pb-4">
+        <h1 className="font-display text-4xl md:text-6xl font-extrabold text-[var(--ink)] leading-[1.05]">Parts for your project</h1>
+        <p className="mt-2 text-[var(--mute)] max-w-[44ch]">Sensors, boards and modules. Add what you need and send the order on <span className="hl font-semibold text-[var(--ink)]">WhatsApp</span>.</p>
       </section>
 
-      <div className="max-w-6xl mx-auto px-6 py-12">
-        {/* Filters */}
-        <div className="flex flex-col md:flex-row gap-4 mb-8 justify-between items-start md:items-center">
-          <div className="relative w-full md:max-w-xs shadow-sm group">
-            <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[var(--ink)] transition-colors" />
+      {/* Search + categories stay reachable while scrolling */}
+      <div className="sticky top-0 md:top-14 z-30 bg-[var(--paper)]/95 border-b border-[var(--rule)]">
+        <div className="max-w-6xl mx-auto px-4 md:px-6 py-3 flex flex-col gap-3">
+          <label className="relative block">
+            <span className="sr-only">Search components</span>
+            <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--mute)]" />
             <input
-              type="text"
-              placeholder="Search components..."
+              type="search"
+              placeholder="Search: ESP32, servo, sensor…"
               value={search}
-              onChange={e => setSearch(e.target.value)}
-              className="w-full pl-11 pr-4 py-2.5 text-sm font-medium border rounded-full outline-none focus:border-[var(--ink)] focus:ring-4 focus:ring-gray-100 transition-all bg-white"
-              style={{ borderColor: "var(--rule)" }}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full h-12 pl-11 pr-4 rounded-full border border-[var(--rule)] bg-white text-[15px] outline-none focus:border-[var(--ink)] focus:ring-4 focus:ring-[var(--hi-soft)]"
             />
-          </div>
-
-          <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto items-start sm:items-center">
-            {/* Stock filter pills (Replacing the basic dropdown) */}
-            <div className="flex bg-gray-100/50 p-1 rounded-full border shadow-inner" style={{ borderColor: "var(--rule)" }}>
-              {(["all", "in", "out"] as const).map(mode => (
-                <button
-                  key={mode}
-                  onClick={() => setStockFilter(mode)}
-                  className={`text-xs px-4 py-1.5 rounded-full font-bold transition-all capitalize ${
-                    stockFilter === mode ? "bg-white text-[var(--ink)] shadow-sm" : "text-[var(--mute)] hover:text-[var(--ink)]"
-                  }`}
-                >
-                  {mode === "all" ? "All Stock" : `${mode} Stock`}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Category Pills */}
-        <div className="flex flex-wrap gap-2 mb-8">
-          <button
-            onClick={() => setSelectedCat("all")}
-            className={`text-xs px-4 py-2 rounded-full font-bold transition-all shadow-sm ${
-              selectedCat === "all" ? "bg-[var(--ink)] text-white" : "bg-white text-[var(--mute)] border hover:border-[var(--ink)] hover:text-[var(--ink)]"
-            }`}
-            style={{ borderColor: selectedCat === "all" ? "transparent" : "var(--rule)" }}
-          >
-            All Categories
-          </button>
-          {categories.map(c => (
-            <button
-              key={c.id}
-              onClick={() => setSelectedCat(c.name)}
-              className={`text-xs px-4 py-2 rounded-full font-bold transition-all shadow-sm ${
-                selectedCat === c.name ? "bg-[var(--ink)] text-white" : "bg-white text-[var(--mute)] border hover:border-[var(--ink)] hover:text-[var(--ink)]"
-              }`}
-              style={{ borderColor: selectedCat === c.name ? "transparent" : "var(--rule)" }}
-            >
-              {c.name}
+          </label>
+          <div className="flex gap-2 overflow-x-auto no-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
+            <button onClick={() => setInStockOnly((v) => !v)} aria-pressed={inStockOnly} className={chip(inStockOnly)}>
+              In stock only
             </button>
-          ))}
-        </div>
-
-        {/* Product Grid */}
-        {filtered.length === 0 ? (
-          <div className="py-24 text-center text-[var(--mute)] bg-gray-50/50 rounded-3xl border border-dashed" style={{ borderColor: "var(--rule)" }}>
-            <Package size={48} className="mx-auto mb-4 opacity-20" />
-            <p className="text-lg font-bold text-[var(--ink)]">No products found</p>
-            <p className="text-sm mt-1">Try adjusting your filters or search query.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
-            {filtered.map(p => (
-              <ProductCard key={p.id} product={p} onAddToCart={addToCart} onBuyNow={handleBuyNow} inCart={cart.some(i => i.product.id === p.id)} />
+            <span className="w-px shrink-0 bg-[var(--rule)] my-1" aria-hidden />
+            <button onClick={() => setSelectedCat("all")} aria-pressed={selectedCat === "all"} className={chip(selectedCat === "all")}>All</button>
+            {categories.map((c) => (
+              <button key={c.id} onClick={() => setSelectedCat(c.name)} aria-pressed={selectedCat === c.name} className={chip(selectedCat === c.name)}>
+                {c.name}
+              </button>
             ))}
           </div>
+        </div>
+      </div>
+
+      <div className="max-w-6xl mx-auto px-4 md:px-6 pt-6">
+        {filtered.length === 0 ? (
+          <div className="py-20 text-center rounded-3xl border border-dashed border-[var(--rule)] bg-white">
+            <Package size={40} className="mx-auto mb-3 text-[var(--rule)]" />
+            <p className="font-semibold text-[var(--ink)]">Nothing matches {search ? `“${search}”` : "these filters"}</p>
+            <button
+              onClick={() => { setSearch(""); setSelectedCat("all"); setInStockOnly(false); }}
+              className="press mt-4 h-10 px-5 rounded-full border border-[var(--ink)] text-sm font-semibold"
+            >
+              Show all parts
+            </button>
+          </div>
+        ) : (
+          <>
+            <AnimatePresence>
+              {showHint && (
+                <motion.p
+                  key="hint"
+                  className="text-[15px] font-bold text-[var(--ink)] overflow-hidden"
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto", marginBottom: 14 }}
+                  exit={{ opacity: 0, height: 0, marginBottom: 0, transition: { duration: 0.6, ease: "easeInOut" } }}
+                  transition={{ duration: 0.35 }}
+                >
+                  <span className="hl">Tap a card to see details</span>
+                </motion.p>
+              )}
+            </AnimatePresence>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-5">
+              {filtered.map((p) => (
+                <FlipCard key={p.id} product={p} qty={qtyOf(p.id)} onQty={(d) => changeQty(p, d)} flipped={flippedId === p.id} onFlip={() => {
+                  markHintSeen();
+                  setFlippedId((id) => (id === p.id ? null : p.id));
+                }} />
+              ))}
+            </div>
+          </>
         )}
       </div>
 
-      {/* Floating Cart Button */}
-      {cartCount > 0 && (
-        <button
-          onClick={() => setCartOpen(true)}
-          className="fixed bottom-6 right-6 z-40 flex items-center gap-3 px-6 py-3.5 bg-[var(--ink)] text-white rounded-full shadow-2xl hover:-translate-y-1 transition-all animate-in slide-in-from-bottom-4 duration-300 font-bold text-sm border border-white/10"
-        >
-          <ShoppingCart size={18} />
-          <span>{cartCount} item{cartCount !== 1 ? "s" : ""}</span>
-          <span className="opacity-50">|</span>
-          <span>{formatPrice(cartTotal)}</span>
-        </button>
-      )}
+      {/* Cart bar: sits just above the bottom tab bar on phones */}
+      <AnimatePresence>
+        {cartCount > 0 && !sheetOpen && (
+          <motion.button
+            key="cartbar"
+            initial={{ y: 80, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 80, opacity: 0 }}
+            onClick={() => setCartOpen(true)}
+            className="fixed z-40 left-4 right-4 md:left-auto md:right-6 md:w-96 bottom-[calc(var(--tab-h)+env(safe-area-inset-bottom,0px)+12px)] md:bottom-6 h-14 rounded-2xl bg-[var(--ink)] text-white px-5 flex items-center justify-between font-semibold"
+            style={{ boxShadow: "0 16px 32px -16px rgb(22 35 58 / .7)" }}
+          >
+            <span className="flex items-center gap-3">
+              <motion.span key={bump} initial={{ scale: 1.35 }} animate={{ scale: 1 }} className="grid place-items-center w-8 h-8 rounded-full bg-[var(--hi)] text-[var(--ink)] text-sm font-bold">
+                {cartCount}
+              </motion.span>
+              {formatPrice(cartTotal)}
+            </span>
+            <span className="inline-flex items-center gap-1.5">View cart <ShoppingBag size={18} /></span>
+          </motion.button>
+        )}
+      </AnimatePresence>
 
-      {/* Cart Drawer */}
-      {cartOpen && (
-        <div className="fixed inset-0 z-50 flex justify-end">
-          <div className="absolute inset-0 bg-[var(--ink)]/40 backdrop-blur-sm" onClick={() => setCartOpen(false)} />
-          <div className="relative bg-white w-full max-w-sm h-full flex flex-col shadow-2xl animate-in slide-in-from-right duration-300">
-            {/* Cart Header */}
-            <div className="flex items-center justify-between p-6 border-b" style={{ borderColor: "var(--rule)" }}>
-              <div>
-                <h2 className="font-extrabold text-[var(--ink)] text-xl tracking-tight">Your Cart</h2>
-                <p className="text-sm font-semibold text-[var(--mute)] mt-1">{cartCount} item{cartCount !== 1 ? "s" : ""}</p>
+      {/* Cart sheet: slides up on phones, from the right on desktop */}
+      <AnimatePresence>
+        {sheetOpen && (
+          <div className="fixed inset-0 z-[60] flex items-end md:items-stretch md:justify-end" role="dialog" aria-modal="true" aria-label="Your cart">
+            <motion.div
+              className="absolute inset-0 bg-[var(--ink)]/40"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setCartOpen(false)}
+            />
+            <motion.div
+              className="relative w-full md:max-w-sm max-h-[85vh] md:max-h-none md:h-full bg-white rounded-t-3xl md:rounded-none flex flex-col"
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 30, stiffness: 300 }}
+            >
+              <div className="md:hidden mx-auto mt-2 w-10 h-1.5 rounded-full bg-[var(--rule)]" aria-hidden />
+              <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--rule)]">
+                <h2 className="font-display text-xl font-extrabold text-[var(--ink)]">Your cart ({cartCount})</h2>
+                <button onClick={() => setCartOpen(false)} aria-label="Close cart" autoFocus className="press grid place-items-center w-10 h-10 rounded-full hover:bg-[var(--paper-2)]">
+                  <X size={20} />
+                </button>
               </div>
-              <button onClick={() => setCartOpen(false)} className="p-2 text-[var(--mute)] hover:text-[var(--ink)] hover:bg-gray-100 rounded-full transition-colors">
-                <X size={20} />
-              </button>
-            </div>
-
-            {/* Cart Items */}
-            <div className="flex-1 overflow-y-auto divide-y" style={{ borderColor: "var(--rule)" }}>
-              {cart.map(({ product, qty }) => (
-                <div key={product.id} className="flex gap-4 p-6 items-center">
-                  {(product.images as string[])?.[0] ? (
-                    <img src={(product.images as string[])[0]} alt={product.name} className="w-16 h-16 object-cover rounded-xl border shadow-sm shrink-0" style={{ borderColor: "var(--rule)" }} />
-                  ) : (
-                    <div className="w-16 h-16 bg-gray-50 rounded-xl border flex items-center justify-center shrink-0 shadow-sm" style={{ borderColor: "var(--rule)" }}>
-                      <Package size={24} className="text-gray-300" />
-                    </div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-bold text-[var(--ink)] truncate mb-1">{product.name}</div>
-                    <div className="text-xs font-semibold text-[var(--mute)]">{formatPrice(product.price)} each</div>
-                    <div className="flex items-center gap-3 mt-3">
-                      <button onClick={() => changeQty(product.id, -1)} className="w-7 h-7 flex items-center justify-center border rounded-full hover:bg-gray-100 transition-colors shadow-sm text-[var(--ink)]" style={{ borderColor: "var(--rule)" }}>
-                        <Minus size={14} />
-                      </button>
-                      <span className="text-sm font-extrabold w-4 text-center">{qty}</span>
-                      <button onClick={() => changeQty(product.id, 1)} className="w-7 h-7 flex items-center justify-center border rounded-full hover:bg-gray-100 transition-colors shadow-sm text-[var(--ink)]" style={{ borderColor: "var(--rule)" }}>
-                        <Plus size={14} />
-                      </button>
-                    </div>
-                  </div>
-                  <div className="text-right shrink-0 flex flex-col items-end">
-                    <div className="font-extrabold text-base text-[var(--ink)]">{formatPrice(product.price * qty)}</div>
-                    <button onClick={() => removeFromCart(product.id)} className="text-[10px] font-bold uppercase tracking-wider text-[var(--mute)] hover:text-red-500 mt-2 transition-colors px-2 py-1 bg-gray-50 rounded-full">Remove</button>
-                  </div>
+              <ul className="flex-1 overflow-y-auto divide-y divide-[var(--rule)]">
+                {cart.map(({ product, qty }) => {
+                  const img = (product.images as string[] | null)?.[0];
+                  return (
+                    <li key={product.id} className="flex gap-4 px-5 py-4 items-center">
+                      <div className="w-14 h-14 rounded-xl bg-[var(--paper-2)] overflow-hidden grid place-items-center shrink-0">
+                        {img ? <img src={img} alt="" className="w-full h-full object-cover" /> : <Package size={22} className="text-[var(--mute)]" />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-[var(--ink)] truncate">{product.name}</p>
+                        <p className="text-sm text-[var(--mute)]">{formatPrice(product.price * qty)}</p>
+                      </div>
+                      <Stepper qty={qty} onQty={(d) => changeQty(product, d)} name={product.name} />
+                    </li>
+                  );
+                })}
+              </ul>
+              <div className="border-t border-[var(--rule)] px-5 pt-4 space-y-3" style={{ paddingBottom: "max(16px, env(safe-area-inset-bottom))" }}>
+                <div className="flex justify-between items-baseline">
+                  <span className="text-[var(--mute)]">Total</span>
+                  <span className="font-display text-2xl font-extrabold text-[var(--ink)]">{formatPrice(cartTotal)}</span>
                 </div>
-              ))}
-            </div>
-
-            {/* Cart Footer */}
-            <div className="border-t p-6 space-y-5 bg-gray-50/50" style={{ borderColor: "var(--rule)" }}>
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-bold text-[var(--mute)] uppercase tracking-wider">Total</span>
-                <span className="text-2xl font-extrabold text-[var(--ink)]">{formatPrice(cartTotal)}</span>
+                <button onClick={handleWhatsApp} className="press w-full h-13 py-3.5 rounded-2xl bg-[#25D366] text-white font-bold text-base">
+                  Send order on WhatsApp
+                </button>
+                <p className="text-xs text-center text-[var(--mute)]">WhatsApp opens with your order typed in. We confirm stock and delivery there.</p>
               </div>
-              <button
-                onClick={handleWhatsApp}
-                className="w-full flex items-center justify-center gap-2 px-5 py-4 bg-[#25D366] text-white rounded-xl font-extrabold text-base hover:bg-[#1fba58] hover:shadow-lg hover:-translate-y-0.5 transition-all"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/>
-                </svg>
-                Order via WhatsApp
-              </button>
-              <p className="text-xs font-medium text-center text-[var(--mute)]">
-                This will open WhatsApp with your order pre-filled.
-              </p>
-            </div>
+            </motion.div>
           </div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
     </div>
   );
 }
 
-// ─── Product Card Component ────────────────────────────────────────
-function ProductCard({
-  product,
-  onAddToCart,
-  onBuyNow,
-  inCart,
-}: {
-  product: Product;
-  onAddToCart: (p: Product) => void;
-  onBuyNow: (p: Product) => void;
-  inCart: boolean;
+function Stepper({ qty, onQty, name, onYellow = false }: { qty: number; onQty: (delta: number) => void; name: string; onYellow?: boolean }) {
+  return (
+    <div className={`flex items-center h-9 rounded-full ${onYellow ? "bg-[var(--ink)] text-[var(--hi)]" : "bg-[var(--hi)] text-[var(--ink)]"}`} onClick={(e) => e.stopPropagation()}>
+      <button onClick={() => onQty(-1)} aria-label={`Remove one ${name}`} className="press grid place-items-center w-9 h-9"><Minus size={16} /></button>
+      <span className="w-5 text-center text-sm font-bold tabular" aria-live="polite">{qty}</span>
+      <button onClick={() => onQty(1)} aria-label={`Add one more ${name}`} className="press grid place-items-center w-9 h-9"><Plus size={16} /></button>
+    </div>
+  );
+}
+
+// ─── Product card: tap to flip for details, Add works on both sides ──
+function FlipCard({ product, qty, onQty, flipped, onFlip }: {
+  product: Product; qty: number; onQty: (delta: number) => void; flipped: boolean; onFlip: () => void;
 }) {
-  const images = product.images as string[] ?? [];
+  const img = (product.images as string[] | null)?.[0];
+
+  const action = (onYellow = false) => product.inStock ? (
+    qty > 0 ? (
+      <Stepper qty={qty} onQty={onQty} name={product.name} onYellow={onYellow} />
+    ) : (
+      <button
+        onClick={(e) => { e.stopPropagation(); onQty(1); }}
+        aria-label={`Add ${product.name} to cart`}
+        className={`press h-9 px-3 rounded-full text-sm font-bold inline-flex items-center gap-1 ${onYellow ? "bg-[var(--ink)] text-[var(--hi)]" : "bg-[var(--hi)] text-[var(--ink)]"}`}
+      >
+        <Plus size={16} /> Add
+      </button>
+    )
+  ) : (
+    <span className="text-xs font-semibold text-[var(--mute)]">Out of stock</span>
+  );
+
+  const priceRow = (
+    <div className="mt-auto pt-2 flex items-center justify-between gap-2">
+      <div>
+        <p className="font-bold text-[var(--ink)] leading-none">{formatPrice(product.price)}</p>
+        <p className="text-[10px] text-[var(--mute)] mt-0.5">incl. GST</p>
+      </div>
+      {action()}
+    </div>
+  );
 
   return (
-    <div className={`bg-white border rounded-2xl flex flex-col h-full transition-all duration-300 ${product.inStock ? "group hover:shadow-xl" : ""}`} style={{ borderColor: "var(--rule)" }}>
-      {/* Image Area */}
-      <div className="aspect-[4/3] bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden relative rounded-t-2xl border-b" style={{ borderColor: "var(--rule)" }}>
-        {images[0] ? (
-          <img 
-            src={images[0]} 
-            alt={product.name} 
-            className={`w-full h-full object-cover mix-blend-multiply transition-transform duration-500 ${product.inStock ? "group-hover:scale-110" : "grayscale opacity-50"}`} 
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <Package size={40} className={`text-gray-300 ${!product.inStock && "opacity-50"}`} />
+    <div
+      role="button"
+      tabIndex={0}
+      aria-pressed={flipped}
+      aria-label={`${product.name}. ${flipped ? "Showing details" : "Tap for details"}`}
+      onClick={onFlip}
+      onKeyDown={(e) => {
+        if (e.target === e.currentTarget && (e.key === "Enter" || e.key === " ")) {
+          e.preventDefault();
+          onFlip();
+        }
+      }}
+      className={`group cursor-pointer [perspective:900px] rounded-2xl outline-none focus-visible:ring-4 focus-visible:ring-[var(--hi)] transition-transform duration-300 ease-out ${product.inStock ? "hover:-translate-y-1.5" : ""}`}
+    >
+      <div
+        className="grid transition-transform duration-500 [transform-style:preserve-3d]"
+        style={{ transform: flipped ? "rotateY(180deg)" : "none" }}
+      >
+        {/* Front (inert while flipped, so only the visible face is clickable/tabbable) */}
+        <div inert={flipped} className={`[grid-area:1/1] [backface-visibility:hidden] bg-white rounded-2xl border border-[var(--rule)] p-2.5 flex flex-col transition-shadow duration-300 ${product.inStock ? "group-hover:shadow-[0_18px_30px_-14px_rgb(22_35_58/0.35)]" : "opacity-70"}`}>
+          <div className="relative aspect-square rounded-xl bg-[var(--paper-2)] overflow-hidden grid place-items-center">
+            {img ? <img src={img} alt="" className={`w-full h-full object-cover transition-transform duration-500 ease-out ${product.inStock ? "group-hover:scale-110" : "grayscale"}`} loading="lazy" /> : <Package size={32} className="text-[var(--rule)]" />}
+            {product.featured && (
+              <span className="absolute top-2 left-2 grid place-items-center w-7 h-7 rounded-full bg-white border border-[var(--rule)]" title="Popular">
+                <Star size={13} className="text-[var(--gold)] fill-[var(--gold)]" />
+              </span>
+            )}
           </div>
-        )}
-        
-        {/* Badges */}
-        <div className="absolute top-3 left-3 flex flex-col gap-2 z-10">
-          {product.featured && (
-            <div className="w-7 h-7 bg-white/90 backdrop-blur rounded-full shadow-sm flex items-center justify-center border" style={{ borderColor: "var(--rule)" }}>
-              <Star size={14} className="text-yellow-500 fill-yellow-500" />
-            </div>
-          )}
+          <h3 className="mt-2.5 text-sm font-semibold text-[var(--ink)] leading-snug line-clamp-2 min-h-[2.5em]">{product.name}</h3>
+          {priceRow}
         </div>
 
-        {/* Diagonal Out of Stock Ribbon */}
-        {!product.inStock && (
-          <div className="absolute top-0 right-0 w-28 h-28 overflow-hidden z-20 pointer-events-none">
-            <div className="absolute top-6 -right-8 w-[140px] flex justify-center rotate-45 bg-[#f07b7b] text-white text-[11px] font-bold py-1.5 shadow-sm uppercase tracking-wider">
-              Out of Stock
-            </div>
+        {/* Back */}
+        <div inert={!flipped} className="[grid-area:1/1] [backface-visibility:hidden] [transform:rotateY(180deg)] bg-[var(--hi)] text-[var(--ink)] rounded-2xl p-3.5 flex flex-col" style={{ boxShadow: "inset 0 1px 0 rgb(255 255 255 / .55)" }}>
+          <div className="flex flex-col items-start gap-1.5">
+            <h3 className="text-sm font-bold leading-snug text-[var(--ink)]">{product.name}</h3>
+            {product.category && (
+              <span className="px-2.5 py-0.5 rounded-full bg-white text-black text-[11px] font-bold leading-relaxed">{product.category}</span>
+            )}
           </div>
-        )}
-      </div>
-
-      {/* Info Area */}
-      <div className={`p-4 flex flex-col flex-1 ${!product.inStock ? "opacity-80" : ""}`}>
-        {product.category && (
-          <div className="mb-2">
-            <span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 text-[10px] font-bold text-[var(--mute)] uppercase tracking-wider rounded-md">
-              <Tag size={10} />
-              {product.category}
-            </span>
+          <p className="mt-1.5 text-[13px] leading-snug text-[var(--ink)]/80 line-clamp-[7] overflow-hidden">
+            {product.description || "Ask us on WhatsApp for full specs of this part."}
+          </p>
+          <p className="mt-2 text-xs font-semibold" style={{ color: product.inStock ? "var(--go)" : "#B42318" }}>
+            {product.inStock ? "In stock" : "Out of stock"}
+          </p>
+          <div className="mt-auto pt-2 flex items-center justify-between gap-2">
+            <p className="font-bold leading-none">{formatPrice(product.price)}</p>
+            {action(true)}
           </div>
-        )}
-        
-        <h3 className={`text-sm font-extrabold text-[var(--ink)] leading-tight mb-1.5 line-clamp-2 transition-colors ${product.inStock ? "group-hover:text-blue-600" : ""}`}>
-          {product.name}
-        </h3>
-        
-        {product.description && (
-          <p className="text-xs font-medium text-[var(--mute)] line-clamp-2 mb-3 flex-1">{product.description}</p>
-        )}
-        
-        <div className="mt-auto pt-3 border-t flex items-center justify-between" style={{ borderColor: "var(--rule)" }}>
-          <div className={`flex items-baseline gap-1 ${!product.inStock ? "opacity-70" : ""}`}>
-            <span className="font-extrabold text-xl text-[var(--ink)]">
-              ₹ {(product.price / 100).toFixed(2)}
-            </span>
-            <span className="text-xs font-semibold text-[#8c939e]">
-              (Incl. GST)
-            </span>
-          </div>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="mt-4">
-          {product.inStock ? (
-            <button
-              onClick={() => onAddToCart(product)}
-              className={`w-full text-xs font-bold py-2.5 rounded-full transition-all border shadow-sm ${
-                inCart
-                  ? "bg-[var(--ink)] text-white border-[var(--ink)]"
-                  : "bg-white border-[var(--rule)] text-[var(--ink)] hover:border-[var(--ink)] hover:bg-gray-50"
-              }`}
-            >
-              {inCart ? "✓ Added" : "Add to Cart"}
-            </button>
-          ) : (
-            <button disabled className="w-full text-xs font-bold py-2.5 rounded-full bg-gray-100 text-[var(--mute)] cursor-not-allowed opacity-70">
-              Unavailable
-            </button>
-          )}
         </div>
       </div>
     </div>

@@ -7,6 +7,7 @@ import Footer from "@/components/Footer";
 
 import { getSettings } from "@/app/x9/settings-actions";
 import { UnderConstruction } from "@/components/UnderConstruction";
+import { isStoreClosed } from "@/lib/utils/helpers";
 
 export const dynamic = "force-dynamic";
 
@@ -15,10 +16,11 @@ export const metadata = {
   description: "Buy electronic components, microcontrollers, sensors, modules and more from SRC e-solutions.",
 };
 
-export default async function StorePage() {
+export default async function StorePage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
+  const { q } = await searchParams;
   const settings = await getSettings();
 
-  if (settings.isStoreUnderConstruction) {
+  if (isStoreClosed(settings)) {
     return (
       <UnderConstruction
         title={
@@ -41,7 +43,7 @@ export default async function StorePage() {
   return (
     <div className="min-h-screen bg-[var(--paper)]">
       <Navbar hideStore={false} />
-      <StoreClient products={allProducts} categories={allCategories} />
+      <StoreClient products={allProducts} categories={allCategories} initialQuery={q ?? ""} />
       <Footer />
     </div>
   );

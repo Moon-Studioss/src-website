@@ -1,5 +1,5 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import { Geist, Geist_Mono, Bricolage_Grotesque } from "next/font/google";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -15,6 +15,20 @@ const geistMono = Geist_Mono({
   weight: ["400", "500"],
   display: "swap",
 });
+
+// Display face for public headlines and the Idea Machine
+const bricolage = Bricolage_Grotesque({
+  variable: "--font-bricolage",
+  subsets: ["latin"],
+  axes: ["opsz"],
+  display: "swap",
+});
+
+// viewport-fit=cover lets the bottom tab bar respect the iPhone home indicator
+export const viewport: Viewport = {
+  viewportFit: "cover",
+  themeColor: "#FFFFFF",
+};
 
 export const metadata: Metadata = {
   title: "SRC e-solutions — Turn Your Project Idea Into a Working Prototype",
@@ -45,7 +59,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable}`}
+      className={`${geistSans.variable} ${geistMono.variable} ${bricolage.variable}`}
       data-scroll-behavior="smooth"
     >
       <body className="min-h-screen antialiased" style={{ background: "var(--paper)", color: "var(--ink)" }}>
