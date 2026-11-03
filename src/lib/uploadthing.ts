@@ -1,8 +1,22 @@
 import { createUploadthing, type FileRouter } from "uploadthing/next";
+import { UploadThingError } from "uploadthing/server";
+import { requireAdmin } from "@/lib/auth";
 
 const f = createUploadthing();
 
 export const uploadRouter = {
+  // Store photos (products and category tiles): admin only
+  productImages: f({ image: { maxFileSize: "4MB", maxFileCount: 5 } })
+    .middleware(async () => {
+      try {
+        await requireAdmin();
+      } catch {
+        throw new UploadThingError("Log in to the admin panel to upload photos");
+      }
+      return {};
+    })
+    .onUploadComplete(async ({ file }) => ({ url: file.ufsUrl })),
+
   // Accepts 1 file only — max 1MB
   projectFiles: f({
     pdf:   { maxFileSize: "1MB", maxFileCount: 1 },

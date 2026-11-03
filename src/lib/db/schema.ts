@@ -72,6 +72,8 @@ export const settings = pgTable("settings", {
 export const productCategories = pgTable("product_categories", {
   id:        uuid("id").primaryKey().defaultRandom(),
   name:      text("name").notNull().unique(),
+  slug:      text("slug").unique(),                      // URL name, set once on create (see lib/store.ts)
+  image:     text("image"),                              // tile photo URL
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -85,6 +87,12 @@ export const products = pgTable("products", {
   images:      jsonb("images").$type<string[]>().default([]),
   inStock:     boolean("in_stock").default(true).notNull(),
   featured:    boolean("featured").default(false).notNull(),
+  slug:        text("slug").unique(),                   // /store?p=<slug>; set once on create, never changes on rename
+  sku:         text("sku"),
+  brand:       text("brand"),
+  mrp:         integer("mrp"),                          // paise; only set when there is a real MRP to show
+  highlights:  jsonb("highlights").$type<string[]>().default([]),
+  specs:       jsonb("specs").$type<{ label: string; value: string }[]>().default([]),
   createdAt:   timestamp("created_at").defaultNow().notNull(),
   updatedAt:   timestamp("updated_at").defaultNow().notNull(),
 });

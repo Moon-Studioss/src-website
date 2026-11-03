@@ -9,17 +9,15 @@ import TechStack from "@/components/TechStack";
 import Faq from "@/components/Faq";
 import CTABand from "@/components/CTABand";
 import Footer from "@/components/Footer";
-import { isStoreClosed } from "@/lib/utils/helpers";
 
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
   const settings = await getSettings();
-  const storeOpen = !isStoreClosed(settings);
 
   return (
     <>
-      <Navbar hideStore={!storeOpen} />
+      <Navbar />
       <main>
         {/* Hero: the Idea Machine is the first thing students meet */}
         {/* Fills the first screen (above the tab bar on phones); content centred vertically */}
@@ -32,7 +30,7 @@ export default async function HomePage() {
                 <span className="hl">Here you go.</span>
               </h1>
               <p className="hidden md:block mt-5 text-lg text-[var(--mute)] max-w-[34ch]">
-                Pick your branch, then pull the lever. Every idea is a real project we can build for you.
+                Plug the wire into your branch, then press the red button. Every idea is a real project we can build for you.
               </p>
               <p className="mt-4 md:mt-8 flex flex-wrap items-center gap-x-3 gap-y-2 text-[15px] text-[var(--ink)]">
                 <span className="font-semibold">Have an idea already?</span>
@@ -44,12 +42,12 @@ export default async function HomePage() {
                 </Link>
               </p>
             </div>
-            <IdeaMachine storeOpen={storeOpen} />
+            <IdeaMachine storeOpen />
           </div>
         </section>
         <HowItWorks />
         <Portfolio />
-        {storeOpen && <PartsRow />}
+        <PartsRow />
         <TechStack />
         <Faq />
         <CTABand />

@@ -36,6 +36,12 @@ export async function verifyAdminSession(): Promise<boolean> {
   }
 }
 
+// ─── Guard for server actions / upload routes: admin only ────────
+// The proxy only protects /x9 page requests, not actions invoked directly.
+export async function requireAdmin(): Promise<void> {
+  if (!(await verifyAdminSession())) throw new Error("Unauthorized");
+}
+
 // ─── Clear session (logout) ──────────────────────────────────────
 export async function signOutAdmin(): Promise<void> {
   const cookieStore = await cookies();

@@ -1,4 +1,4 @@
-import { db } from "@/lib/db";
+import { db, withRetry } from "@/lib/db";
 import { requests } from "@/lib/db/schema";
 import { desc } from "drizzle-orm";
 import { headers } from "next/headers";
@@ -19,7 +19,7 @@ export default async function AdminDashboardPage() {
     }).catch(() => {}); // fire-and-forget, ignore errors
   } catch {}
 
-  const allRequests = await db.select().from(requests).orderBy(desc(requests.createdAt));
+  const allRequests = await withRetry(() => db.select().from(requests).orderBy(desc(requests.createdAt)));
   const currentSettings = await getSettings();
 
   return <RequestListClient initialRequests={allRequests} autoDeleteTimer={currentSettings.autoDeleteTimer} />;

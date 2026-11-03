@@ -3,10 +3,11 @@
 import { useState, useTransition, useEffect, useRef } from "react";
 import {
   addProduct, updateProduct, deleteProduct,
-  toggleProductStock, addCategory, deleteCategory,
+  toggleProductStock,
 } from "./actions";
-import { Package, Tag, Plus, Pencil, Trash2, CheckCircle2, XCircle, Star, StarOff, X, ChevronDown, Check } from "lucide-react";
+import { Package, Tag, Plus, Trash2, CheckCircle2, XCircle, Star, StarOff, X, ChevronDown, Check, Copy } from "lucide-react";
 import type { Product, ProductCategory } from "@/lib/db/schema";
+import { parseLines, parseSpecs, specsToText } from "@/lib/store";
 
 type Props = {
   initialProducts: Product[];
@@ -14,8 +15,12 @@ type Props = {
 };
 
 const emptyForm = {
-  name: "", description: "", price: "", category: "", images: "", inStock: true, featured: false,
+  name: "", description: "", price: "", mrp: "", category: "", brand: "", sku: "",
+  highlights: "", specs: "", images: "", inStock: true, featured: false,
 };
+
+const fieldLabel = "block text-xs font-semibold text-[var(--mute)] mb-1.5 uppercase tracking-wider";
+const fieldInput = "w-full text-sm border px-3 py-2 rounded-lg outline-none focus:border-[var(--ink)] transition-colors";
 
 function CustomSelect({ value, onChange, options, placeholder = "Select...", className = "min-w-[140px]" }: { 
   value: string, 
@@ -77,12 +82,10 @@ export function StoreAdminClient({ initialProducts, initialCategories }: Props) 
   const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [form, setForm] = useState(emptyForm);
-  const [newCat, setNewCat] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [filterCat, setFilterCat] = useState("all");
   const [filterStock, setFilterStock] = useState("all");
   const [isPending, startTransition] = useTransition();
-  const [catError, setCatError] = useState("");
 
   // ─── Stats ──────────────────────────────────────────────────────
   const total = products.length;
@@ -90,8 +93,7 @@ export function StoreAdminClient({ initialProducts, initialCategories }: Props) 
   const outCount = total - inStockCount;
   const featuredCount = products.filter(p => p.featured).length;
 
-  const predefinedCats = ["Microcontrollers", "Sensors", "Displays", "Modules", "Kits", "Cables & Connectors"];
-  const allAvailableCats = [...new Set([...predefinedCats, ...categories.map(c => c.name)])];
+  const allAvailableCats = [...new Set([...categories.map(c => c.name), ...products.map(p => p.category).filter((c): c is string => !!c)])].sort();
 
   // ─── Filtered list ───────────────────────────────────────────────
   const filtered = products.filter(p => {
@@ -103,31 +105,50 @@ export function StoreAdminClient({ initialProducts, initialCategories }: Props) 
 
   // ─── Form helpers ─────────────────────────────────────────────────
   const openAdd = () => { setEditingProduct(null); setForm(emptyForm); setShowForm(true); };
-  const openEdit = (p: Product) => {
-    setEditingProduct(p);
-    setForm({
-      name: p.name,
-      description: p.description ?? "",
-      price: (p.price / 100).toString(),
-      category: p.category ?? "",
-      images: (p.images as string[] ?? []).join("\n"),
-      inStock: p.inStock,
-      featured: p.featured,
-    });
-    setShowForm(true);
-  };
+  const formFrom = (p: Product) => ({
+    name: p.name,
+    description: p.description ?? "",
+    price: (p.price / 100).toString(),
+    mrp: p.mrp ? (p.mrp / 100).toString() : "",
+    category: p.category ?? "",
+    brand: p.brand ?? "",
+    sku: p.sku ?? "",
+    highlights: (p.highlights ?? []).join("\n"),
+    specs: specsToText(p.specs),
+    images: (p.images as string[] ?? []).join("\n"),
+    inStock: p.inStock,
+    featured: p.featured,
+  });
+  const openEdit = (p: Product) => { setEditingProduct(p); setForm(formFrom(p)); setShowForm(true); };
+  // Start a new product from an existing one (SKU is unique per part, so it is cleared)
+  const openDuplicate = (p: Product) => { setEditingProduct(null); setForm({ ...formFrom(p), sku: "" }); setShowForm(true); };
   const closeForm = () => { setShowForm(false); setEditingProduct(null); };
+
+  const imageList = parseLines(form.images);
+  const setImageList = (list: string[]) => setForm(f => ({ ...f, images: list.join("\n") }));
+  const [linkOpen, setLinkOpen] = useState(false);
+  const [linkVal, setLinkVal] = useState("");
+  const addLink = () => {
+    const u = linkVal.trim();
+    if (/^https?:\/\//i.test(u)) setImageList([...imageList, u].slice(0, 8));
+    setLinkVal(""); setLinkOpen(false);
+  };
 
   const handleSave = () => {
     const priceNum = parseFloat(form.price);
     if (!form.name.trim() || isNaN(priceNum) || priceNum <= 0) return;
-    const imageArr = form.images.split("\n").map(s => s.trim()).filter(Boolean);
+    const mrpNum = parseFloat(form.mrp);
     const data = {
       name: form.name.trim(),
       description: form.description.trim(),
       price: priceNum,
+      mrp: isNaN(mrpNum) ? null : mrpNum,
       category: form.category.trim(),
-      images: imageArr,
+      brand: form.brand,
+      sku: form.sku,
+      images: imageList,
+      highlights: parseLines(form.highlights),
+      specs: parseSpecs(form.specs),
       inStock: form.inStock,
       featured: form.featured,
     };
@@ -135,7 +156,7 @@ export function StoreAdminClient({ initialProducts, initialCategories }: Props) 
       if (editingProduct) {
         await updateProduct(editingProduct.id, data);
         setProducts(prev => prev.map(p => p.id === editingProduct.id
-          ? { ...p, ...data, price: Math.round(priceNum * 100), images: imageArr, updatedAt: new Date() }
+          ? { ...p, ...data, price: Math.round(priceNum * 100), mrp: data.mrp && data.mrp > priceNum ? Math.round(data.mrp * 100) : null, brand: data.brand.trim() || null, sku: data.sku.trim() || null, category: data.category || null, description: data.description || null, updatedAt: new Date() }
           : p));
       } else {
         await addProduct(data);
@@ -160,19 +181,6 @@ export function StoreAdminClient({ initialProducts, initialCategories }: Props) 
     startTransition(async () => { await deleteProduct(id); });
   };
 
-  const handleAddCat = async () => {
-    setCatError("");
-    const res = await addCategory(newCat);
-    if (res.error) { setCatError(res.error); return; }
-    setCategories(prev => [...prev, { id: Date.now().toString(), name: newCat.trim(), createdAt: new Date() }]);
-    setNewCat("");
-  };
-
-  const handleDeleteCat = (id: string) => {
-    setCategories(prev => prev.filter(c => c.id !== id));
-    startTransition(async () => { await deleteCategory(id); });
-  };
-
   const formatPrice = (paise: number) => `₹${(paise / 100).toLocaleString("en-IN")}`;
 
   return (
@@ -185,7 +193,7 @@ export function StoreAdminClient({ initialProducts, initialCategories }: Props) 
         </div>
         <button
           onClick={openAdd}
-          className="flex items-center gap-2 px-4 py-2 bg-[var(--ink)] text-white text-sm font-semibold rounded hover:opacity-90 transition-opacity"
+          className="flex items-center gap-2 press px-5 py-2.5 bg-[var(--hi)] text-[var(--ink)] text-sm font-bold rounded-lg shadow-sm hover:shadow-md"
         >
           <Plus size={16} /> Add Product
         </button>
@@ -198,9 +206,9 @@ export function StoreAdminClient({ initialProducts, initialCategories }: Props) 
           { label: "In Stock", value: inStockCount, icon: <CheckCircle2 size={18} className="text-green-600" /> },
           { label: "Out of Stock", value: outCount, icon: <XCircle size={18} className="text-red-500" /> },
           { label: "Featured", value: featuredCount, icon: <Star size={18} className="text-yellow-500" /> },
-        ].map(s => (
-          <div key={s.label} className="bg-white border rounded p-4 flex items-center gap-3" style={{ borderColor: "var(--rule)" }}>
-            <div className="text-[var(--mute)]">{s.icon}</div>
+        ].map((s, i) => (
+          <div key={s.label} className="pop press bg-white border rounded-xl p-4 flex items-center gap-3 hover:border-[var(--hi)]" style={{ borderColor: "var(--rule)", animationDelay: `${i * 50}ms` }}>
+            <div className="grid place-items-center w-10 h-10 rounded-full bg-[var(--hi-soft)] text-[var(--ink)]">{s.icon}</div>
             <div>
               <div className="text-xl font-bold text-[var(--ink)]">{s.value}</div>
               <div className="text-xs text-[var(--mute)]">{s.label}</div>
@@ -215,7 +223,7 @@ export function StoreAdminClient({ initialProducts, initialCategories }: Props) 
           <button
             key={t}
             onClick={() => setTab(t)}
-            className={`pb-2 capitalize transition-colors ${tab === t ? "text-[var(--ink)] border-b-2 border-[var(--ink)]" : "text-[var(--mute)]"}`}
+            className={`pb-2 capitalize transition-colors ${tab === t ? "text-[var(--ink)] border-b-2 border-[var(--hi)]" : "text-[var(--mute)]"}`}
           >
             {t === "products" ? `Products (${total})` : `Categories (${categories.length})`}
           </button>
@@ -249,7 +257,7 @@ export function StoreAdminClient({ initialProducts, initialCategories }: Props) 
           </div>
 
           {/* Product Table */}
-          <div className="bg-white border rounded overflow-hidden" style={{ borderColor: "var(--rule)" }}>
+          <div className="pop bg-white border rounded-xl overflow-hidden" style={{ borderColor: "var(--rule)" }}>
             {filtered.length === 0 ? (
               <div className="p-10 text-center text-[var(--mute)] text-sm">
                 <Package size={32} className="mx-auto mb-3 opacity-30" />
@@ -268,7 +276,7 @@ export function StoreAdminClient({ initialProducts, initialCategories }: Props) 
                 </thead>
                 <tbody className="divide-y block sm:table-row-group" style={{ borderColor: "var(--rule)" }}>
                   {filtered.map(p => (
-                    <tr key={p.id} className="hover:bg-gray-50/50 transition-colors block sm:table-row border-b sm:border-b-0 last:border-b-0">
+                    <tr key={p.id} onClick={(e) => { if (!(e.target as HTMLElement).closest("button")) openEdit(p); }} className="cursor-pointer hover:bg-[var(--hi-soft)]/40 transition-colors block sm:table-row border-b sm:border-b-0 last:border-b-0">
                       <td className="px-4 py-4 w-full block sm:table-cell">
                         <div className="flex items-start sm:items-center gap-4">
                           {(p.images as string[])?.[0] ? (
@@ -283,7 +291,7 @@ export function StoreAdminClient({ initialProducts, initialCategories }: Props) 
                               {p.name}
                               {p.featured && <Star size={14} className="text-yellow-500 fill-yellow-500 shrink-0" />}
                             </div>
-                            <div className="text-xs text-[var(--mute)] mt-0.5">ID: {p.id.slice(0, 8)}</div>
+                            <div className="text-xs text-[var(--mute)] mt-0.5">{p.sku ? `SKU: ${p.sku}` : `ID: ${p.id.slice(0, 8)}`}{p.brand ? ` · ${p.brand}` : ""}</div>
 
                             {/* Mobile-only Details */}
                             <div className="sm:hidden mt-3 space-y-3">
@@ -302,8 +310,8 @@ export function StoreAdminClient({ initialProducts, initialCategories }: Props) 
                                 >
                                   {p.inStock ? "In Stock" : "Out of Stock"}
                                 </button>
-                                <button onClick={() => openEdit(p)} className="p-1.5 px-3 text-[var(--mute)] bg-gray-50 border rounded-lg">
-                                  <Pencil size={14} />
+                                <button onClick={() => openDuplicate(p)} aria-label="Duplicate" className="p-1.5 px-3 text-[var(--mute)] bg-gray-50 border rounded-lg">
+                                  <Copy size={14} />
                                 </button>
                                 <button onClick={() => confirmDelete(p.id)} className="p-1.5 px-3 text-red-500 bg-red-50 border border-red-100 rounded-lg">
                                   <Trash2 size={14} />
@@ -324,7 +332,7 @@ export function StoreAdminClient({ initialProducts, initialCategories }: Props) 
                       <td className="px-4 py-4 align-middle hidden sm:table-cell">
                         <button
                           onClick={() => handleToggleStock(p.id, p.inStock)}
-                          className={`text-xs font-bold px-3 py-1.5 rounded-full border transition-all whitespace-nowrap ${
+                          className={`text-xs font-bold px-3 py-1.5 rounded-lg border transition-all whitespace-nowrap ${
                             p.inStock
                               ? "bg-green-50 text-green-700 border-green-200 hover:bg-green-100 shadow-sm"
                               : "bg-red-50 text-red-600 border-red-200 hover:bg-red-100 shadow-sm"
@@ -335,8 +343,8 @@ export function StoreAdminClient({ initialProducts, initialCategories }: Props) 
                       </td>
                       <td className="px-4 py-4 align-middle hidden sm:table-cell">
                         <div className="flex items-center gap-2 justify-end">
-                          <button onClick={() => openEdit(p)} className="p-2 text-[var(--mute)] hover:text-[var(--ink)] hover:bg-gray-100 rounded-lg transition-colors border border-transparent hover:border-gray-200" title="Edit">
-                            <Pencil size={15} />
+                          <button onClick={() => openDuplicate(p)} className="press p-2 text-[var(--mute)] hover:text-[var(--ink)] hover:bg-[var(--hi-soft)] rounded-lg border border-transparent" title="Duplicate (new product from this one)">
+                            <Copy size={15} />
                           </button>
                           <button onClick={() => confirmDelete(p.id)} className="p-2 text-[var(--mute)] hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors border border-transparent hover:border-red-100" title="Delete">
                             <Trash2 size={15} />
@@ -354,28 +362,8 @@ export function StoreAdminClient({ initialProducts, initialCategories }: Props) 
 
       {/* Categories Tab */}
       {tab === "categories" && (
-        <div className="space-y-4 max-w-md">
-          <div className="flex gap-2">
-            <input
-              type="text"
-              placeholder="New category name..."
-              value={newCat}
-              onChange={e => setNewCat(e.target.value)}
-              onKeyDown={e => e.key === "Enter" && handleAddCat()}
-              className="flex-1 text-sm border px-3 py-2 rounded outline-none focus:border-[var(--ink)] transition-colors"
-              style={{ borderColor: "var(--rule)" }}
-            />
-            <button
-              onClick={handleAddCat}
-              disabled={!newCat.trim()}
-              className="px-4 py-2 text-sm font-semibold bg-[var(--ink)] text-white rounded hover:opacity-90 disabled:opacity-40 transition-all"
-            >
-              Add
-            </button>
-          </div>
-          {catError && <p className="text-xs text-red-500">{catError}</p>}
-
-          <div className="bg-white border rounded divide-y" style={{ borderColor: "var(--rule)" }}>
+        <div className="space-y-4 max-w-xl">
+          <div className="pop bg-white border rounded-xl divide-y" style={{ borderColor: "var(--rule)" }}>
             {categories.length === 0 ? (
               <div className="p-6 text-center text-[var(--mute)] text-sm">
                 <Tag size={24} className="mx-auto mb-2 opacity-30" />
@@ -384,19 +372,19 @@ export function StoreAdminClient({ initialProducts, initialCategories }: Props) 
             ) : (
               categories.map(c => (
                 <div key={c.id} className="flex items-center justify-between px-4 py-3 hover:bg-gray-50">
-                  <div className="flex items-center gap-2">
-                    <Tag size={14} className="text-[var(--mute)]" />
-                    <span className="text-sm font-medium text-[var(--ink)]">{c.name}</span>
-                    <span className="text-xs text-[var(--mute)]">
-                      ({products.filter(p => p.category === c.name).length} products)
-                    </span>
+                  <div className="flex items-center gap-3 min-w-0">
+                    {c.image ? (
+                      <img src={c.image} alt="" className="w-10 h-10 shrink-0 rounded-lg object-cover border" style={{ borderColor: "var(--rule)" }} />
+                    ) : (
+                      <div className="w-10 h-10 shrink-0 rounded-lg bg-gray-50 border grid place-items-center" style={{ borderColor: "var(--rule)" }}>
+                        <Tag size={14} className="text-[var(--mute)]" />
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-[var(--ink)] truncate">{c.name}</p>
+                      <p className="text-xs text-[var(--mute)]">{products.filter(p => p.category === c.name).length} products</p>
+                    </div>
                   </div>
-                  <button
-                    onClick={() => handleDeleteCat(c.id)}
-                    className="p-1.5 text-[var(--mute)] hover:text-red-500 hover:bg-red-50 rounded transition-colors"
-                  >
-                    <Trash2 size={14} />
-                  </button>
                 </div>
               ))
             )}
@@ -407,21 +395,21 @@ export function StoreAdminClient({ initialProducts, initialCategories }: Props) 
       {/* Product Form Modal */}
       {showForm && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
-          <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between p-5 border-b sticky top-0 bg-white z-10" style={{ borderColor: "var(--rule)" }}>
-              <h2 className="text-base font-bold text-[var(--ink)]">
+          <div className="bg-white w-full max-w-3xl rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden pop">
+            <div className="flex items-center justify-between px-6 py-4 border-b-4 border-[var(--hi)] sticky top-0 bg-white z-10 rounded-t-2xl" style={{ borderColor: "var(--rule)" }}>
+              <h2 className="text-lg font-bold text-[var(--ink)]">
                 {editingProduct ? "Edit Product" : "Add New Product"}
               </h2>
-              <button onClick={closeForm} className="p-1 text-[var(--mute)] hover:text-[var(--ink)]"><X size={18} /></button>
+              <button onClick={closeForm} className="press p-2 rounded-lg text-[var(--mute)] hover:text-[var(--ink)] hover:bg-[var(--hi-soft)]"><X size={18} /></button>
             </div>
-            <div className="p-5 space-y-4">
+            <div className="p-6 space-y-5">
               {/* Name */}
               <div>
                 <label className="block text-xs font-semibold text-[var(--mute)] mb-1.5 uppercase tracking-wider">Product Name *</label>
                 <input
                   type="text" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                   placeholder="e.g. Arduino Uno R3"
-                  className="w-full text-sm border px-3 py-2 rounded-xl outline-none focus:border-[var(--ink)] transition-colors"
+                  className="w-full text-sm border px-4 py-2.5 rounded-lg outline-none focus:border-[var(--ink)] focus:ring-4 focus:ring-[var(--hi-soft)] transition-all"
                   style={{ borderColor: "var(--rule)" }}
                 />
               </div>
@@ -432,19 +420,40 @@ export function StoreAdminClient({ initialProducts, initialCategories }: Props) 
                   value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
                   placeholder="Brief description of the component..."
                   rows={3}
-                  className="w-full text-sm border px-3 py-2 rounded-xl outline-none focus:border-[var(--ink)] transition-colors resize-none"
+                  className="w-full text-sm border px-4 py-2.5 rounded-lg outline-none focus:border-[var(--ink)] focus:ring-4 focus:ring-[var(--hi-soft)] transition-all resize-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
                   style={{ borderColor: "var(--rule)" }}
                 />
               </div>
-              {/* Price */}
-              <div>
-                <label className="block text-xs font-semibold text-[var(--mute)] mb-1.5 uppercase tracking-wider">Price (₹) *</label>
-                <input
-                  type="number" min="0" step="0.01" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))}
-                  placeholder="e.g. 499"
-                  className="w-full text-sm border px-3 py-2 rounded-xl outline-none focus:border-[var(--ink)] transition-colors"
-                  style={{ borderColor: "var(--rule)" }}
-                />
+              {/* Brand + SKU */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={fieldLabel}>Brand</label>
+                  <input type="text" value={form.brand} onChange={e => setForm(f => ({ ...f, brand: e.target.value }))}
+                    placeholder="e.g. Arduino" className={fieldInput} style={{ borderColor: "var(--rule)" }} />
+                </div>
+                <div>
+                  <label className={fieldLabel}>SKU</label>
+                  <input type="text" value={form.sku} onChange={e => setForm(f => ({ ...f, sku: e.target.value }))}
+                    placeholder="e.g. ARD-UNO-R3" className={fieldInput} style={{ borderColor: "var(--rule)" }} />
+                </div>
+              </div>
+              {/* Price + MRP */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={fieldLabel}>Price (₹) *</label>
+                  <input
+                    type="number" min="0" step="0.01" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))}
+                    placeholder="e.g. 499" className={fieldInput} style={{ borderColor: "var(--rule)" }}
+                  />
+                </div>
+                <div>
+                  <label className={fieldLabel}>MRP (₹)</label>
+                  <input
+                    type="number" min="0" step="0.01" value={form.mrp} onChange={e => setForm(f => ({ ...f, mrp: e.target.value }))}
+                    placeholder="optional" className={fieldInput} style={{ borderColor: "var(--rule)" }}
+                  />
+                </div>
+                <p className="col-span-2 -mt-1 text-xs text-[var(--mute)]">Fill MRP only if it is a real, higher price. The store then shows it crossed out with the % off.</p>
               </div>
               <div className="space-y-2">
                 <label className="block text-xs font-semibold text-[var(--mute)] uppercase tracking-wider">Category</label>
@@ -473,42 +482,53 @@ export function StoreAdminClient({ initialProducts, initialCategories }: Props) 
                     onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
                     placeholder="Type new category name..."
                     autoFocus
-                    className="w-full text-sm border px-3 py-2 rounded-xl outline-none focus:border-[var(--ink)] transition-colors animate-in fade-in slide-in-from-top-2"
+                    className="w-full text-sm border px-4 py-2.5 rounded-lg outline-none focus:border-[var(--ink)] focus:ring-4 focus:ring-[var(--hi-soft)] transition-all animate-in fade-in slide-in-from-top-2"
                     style={{ borderColor: "var(--rule)" }}
                   />
                 )}
               </div>
-              {/* Image URLs */}
+              {/* Highlights + specifications (shown in the product popup) */}
               <div>
-                <label className="block text-xs font-semibold text-[var(--mute)] mb-1.5 uppercase tracking-wider">Image URLs (one per line)</label>
-                <textarea
-                  value={form.images} onChange={e => setForm(f => ({ ...f, images: e.target.value }))}
-                  placeholder={"https://example.com/image1.jpg\nhttps://example.com/image2.jpg"}
-                  rows={3}
-                  className="w-full text-sm border px-3 py-2 rounded-xl outline-none focus:border-[var(--ink)] transition-colors resize-none font-mono text-xs"
-                  style={{ borderColor: "var(--rule)" }}
-                />
-                
-                {/* Image Previews */}
-                {form.images.trim() && (
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {form.images.split("\n").map(s => s.trim()).filter(Boolean).map((img, i) => (
-                      <div key={i} className="relative w-12 h-12 rounded border bg-gray-50 overflow-hidden shrink-0 group" style={{ borderColor: "var(--rule)" }}>
-                        <img 
-                          src={img} 
-                          alt={`Preview ${i + 1}`} 
-                          className="w-full h-full object-cover transition-opacity" 
-                          onError={(e) => {
-                            // On error, hide the broken image icon and just show a generic placeholder box
-                            (e.target as HTMLImageElement).style.display = 'none';
-                            e.currentTarget.parentElement?.classList.add('flex', 'items-center', 'justify-center', 'text-red-400', 'text-[10px]', 'font-bold', 'bg-red-50');
-                            if (e.currentTarget.parentElement) {
-                              e.currentTarget.parentElement.innerText = 'Err';
-                            }
-                          }}
-                        />
-                      </div>
-                    ))}
+                <label className={fieldLabel}>Key points (one per line)</label>
+                <textarea value={form.highlights} onChange={e => setForm(f => ({ ...f, highlights: e.target.value }))}
+                  placeholder={"Works with 3.3V and 5V\nBuilt-in USB-to-serial chip"} rows={3}
+                  className={`${fieldInput} resize-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden`} style={{ borderColor: "var(--rule)" }} />
+              </div>
+              <div>
+                <label className={fieldLabel}>Specifications (Label: Value, one per line)</label>
+                <textarea value={form.specs} onChange={e => setForm(f => ({ ...f, specs: e.target.value }))}
+                  placeholder={"Operating voltage: 5V\nDigital pins: 14"} rows={4}
+                  className={`${fieldInput} resize-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden`} style={{ borderColor: "var(--rule)" }} />
+              </div>
+
+              {/* Photos: the first one is the main photo */}
+              <div>
+                <label className={fieldLabel}>Photos</label>
+                <div className="flex flex-wrap gap-2 mt-1">
+                  {imageList.map((img, i) => (
+                    <div key={img + i} className="relative w-16 h-16 rounded-lg border bg-gray-50 overflow-hidden shrink-0" style={{ borderColor: i === 0 ? "var(--ink)" : "var(--rule)" }}>
+                      <img src={img} alt={`Photo ${i + 1}`} className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.opacity = "0.2"; }} />
+                      <button type="button" aria-label={`Remove photo ${i + 1}`} onClick={() => setImageList(imageList.filter((_, j) => j !== i))}
+                        className="absolute top-0.5 right-0.5 grid place-items-center w-5 h-5 rounded-full bg-black/60 text-white"><X size={12} /></button>
+                      {i === 0 ? (
+                        <span className="absolute bottom-0 inset-x-0 text-center text-[10px] font-bold bg-[var(--ink)] text-white">Main</span>
+                      ) : (
+                        <button type="button" onClick={() => setImageList([img, ...imageList.filter((_, j) => j !== i)])}
+                          className="absolute bottom-0 inset-x-0 text-center text-[10px] font-semibold bg-white/85 text-[var(--ink)]">Make main</button>
+                      )}
+                    </div>
+                  ))}
+                  {imageList.length < 8 && (
+                    <button type="button" aria-label="Add photo by link" onClick={() => setLinkOpen(o => !o)}
+                      className="press grid place-items-center w-16 h-16 rounded-lg border-2 border-dashed border-[var(--rule)] text-[var(--mute)] hover:border-[var(--hi)] hover:bg-[var(--hi-soft)] hover:text-[var(--ink)]"><Plus size={20} /></button>
+                  )}
+                </div>
+                {linkOpen && (
+                  <div className="pop mt-3 flex gap-2">
+                    <input autoFocus type="url" value={linkVal} onChange={e => setLinkVal(e.target.value)} placeholder="Paste image link and press Enter"
+                      onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addLink(); } }}
+                      className="flex-1 text-sm border px-4 py-2 rounded-lg outline-none focus:border-[var(--ink)] focus:ring-4 focus:ring-[var(--hi-soft)]" style={{ borderColor: "var(--rule)" }} />
+                    <button type="button" onClick={addLink} className="press px-5 py-2 text-sm font-bold bg-[var(--hi)] text-[var(--ink)] rounded-lg">Add</button>
                   </div>
                 )}
               </div>
@@ -517,7 +537,7 @@ export function StoreAdminClient({ initialProducts, initialCategories }: Props) 
                 <label className="flex items-center gap-2 cursor-pointer select-none">
                   <div
                     onClick={() => setForm(f => ({ ...f, inStock: !f.inStock }))}
-                    className={`relative w-10 h-5 rounded-full transition-colors ${form.inStock ? "bg-green-500" : "bg-gray-200"}`}
+                    className={`relative w-10 h-5 rounded-full transition-colors ${form.inStock ? "bg-[var(--hi)]" : "bg-gray-200"}`}
                   >
                     <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${form.inStock ? "translate-x-5" : "translate-x-0.5"}`} />
                   </div>
@@ -526,7 +546,7 @@ export function StoreAdminClient({ initialProducts, initialCategories }: Props) 
                 <label className="flex items-center gap-2 cursor-pointer select-none">
                   <div
                     onClick={() => setForm(f => ({ ...f, featured: !f.featured }))}
-                    className={`relative w-10 h-5 rounded-full transition-colors ${form.featured ? "bg-yellow-400" : "bg-gray-200"}`}
+                    className={`relative w-10 h-5 rounded-full transition-colors ${form.featured ? "bg-[var(--hi)]" : "bg-gray-200"}`}
                   >
                     <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${form.featured ? "translate-x-5" : "translate-x-0.5"}`} />
                   </div>
@@ -534,10 +554,10 @@ export function StoreAdminClient({ initialProducts, initialCategories }: Props) 
                 </label>
               </div>
             </div>
-            <div className="flex gap-3 justify-end p-5 border-t bg-gray-50 rounded-b-2xl" style={{ borderColor: "var(--rule)" }}>
+            <div className="flex gap-3 justify-end px-6 py-4 border-t bg-[var(--paper-2)] rounded-b-2xl" style={{ borderColor: "var(--rule)" }}>
               <button
                 onClick={closeForm}
-                className="px-4 py-2 text-sm font-semibold border rounded-xl hover:bg-white transition-colors shadow-sm text-[var(--ink)]"
+                className="px-4 py-2 text-sm font-semibold press border rounded-lg hover:bg-white shadow-sm text-[var(--ink)]"
                 style={{ borderColor: "var(--rule)" }}
               >
                 Cancel
@@ -545,7 +565,7 @@ export function StoreAdminClient({ initialProducts, initialCategories }: Props) 
               <button
                 onClick={handleSave}
                 disabled={!form.name.trim() || !form.price || isPending}
-                className="px-5 py-2 text-sm font-semibold bg-[var(--ink)] text-white rounded-xl hover:opacity-90 disabled:opacity-40 transition-all shadow-sm"
+                className="press px-6 py-2 text-sm font-bold bg-[var(--hi)] text-[var(--ink)] rounded-lg hover:opacity-90 disabled:opacity-40 transition-all shadow-sm"
               >
                 {isPending ? "Saving..." : editingProduct ? "Save Changes" : "Add Product"}
               </button>
@@ -557,11 +577,11 @@ export function StoreAdminClient({ initialProducts, initialCategories }: Props) 
       {/* Delete Confirmation */}
       {deletingId && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
-          <div className="bg-white p-6 max-w-sm w-full rounded-2xl shadow-2xl animate-in zoom-in-95 duration-200">
+          <div className="bg-white p-6 max-w-sm w-full rounded-2xl shadow-2xl pop">
             <h3 className="text-lg font-bold text-[var(--ink)] mb-2">Delete Product?</h3>
             <p className="text-sm text-[var(--mute)] mb-6">This product will be permanently removed from the store.</p>
             <div className="flex gap-3 justify-end">
-              <button onClick={() => setDeletingId(null)} className="px-4 py-2 text-sm font-semibold border rounded-xl hover:bg-gray-50 transition-colors" style={{ borderColor: "var(--rule)", color: "var(--ink)" }}>Cancel</button>
+              <button onClick={() => setDeletingId(null)} className="px-4 py-2 text-sm font-semibold border rounded-xl hover:bg-[var(--hi-soft)] transition-colors" style={{ borderColor: "var(--rule)", color: "var(--ink)" }}>Cancel</button>
               <button onClick={handleDelete} className="px-4 py-2 text-sm font-semibold bg-red-500 text-white rounded hover:bg-red-600 transition-colors">Delete</button>
             </div>
           </div>

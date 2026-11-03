@@ -76,11 +76,3 @@ export const BUDGET_LABELS: Record<string, string> = {
 export function formatPrice(paise: number) {
   return `₹${(paise / 100).toLocaleString("en-IN")}`;
 }
-
-// ─── Store visibility on public pages ────────────────────────────
-// On the local dev server (`npm run dev`) the store is always open, so it can be
-// built and tested while it's "under construction" on the live site.
-// Admin settings still read and save the real value.
-export function isStoreClosed(settings: { isStoreUnderConstruction: boolean }) {
-  return settings.isStoreUnderConstruction && process.env.NODE_ENV !== "development";
-}

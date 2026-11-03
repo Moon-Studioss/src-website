@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { formatDaysLeft, getUrgency, CATEGORY_LABELS, STATUS_LABELS, BUDGET_LABELS } from "@/lib/utils/helpers";
+import { Trash2 } from "lucide-react";
 import { toggleStar, deleteRequest, deleteAllRejectedRequests, deleteAllCompletedRequests } from "./actions";
 
 type RequestData = any; // We can type this strictly later if needed
@@ -103,16 +104,17 @@ export function RequestListClient({ initialRequests, autoDeleteTimer }: { initia
         ].map(filter => (
           <button
             key={filter.id}
+            style={{ animationDelay: `${["all","new","reviewing","accepted","in_progress","completed","rejected"].indexOf(filter.id) * 40}ms` }}
             onClick={() => setFilterStatus(filter.id)}
-            className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-semibold border transition-all flex items-center gap-2 ${
+            className={`press pop whitespace-nowrap px-4 py-2 rounded-lg text-sm font-semibold border flex items-center gap-2 ${
               filterStatus === filter.id 
-                ? "bg-[var(--ink)] text-white border-[var(--ink)] shadow-md" 
-                : "bg-white text-[var(--mute)] border-gray-200 hover:border-gray-400 hover:text-[var(--ink)] shadow-sm"
+                ? "bg-[var(--hi)] text-[var(--ink)] border-[var(--hi)] shadow-md" 
+                : "bg-white text-[var(--mute)] border-gray-200 hover:border-[var(--hi)] hover:bg-[var(--hi-soft)] hover:text-[var(--ink)] shadow-sm"
             }`}
           >
             {filter.label} 
-            <span className={`px-1.5 py-0.5 rounded-full text-[10px] leading-none ${
-              filterStatus === filter.id ? "bg-white/20 text-white" : "bg-gray-100 text-gray-500"
+            <span className={`min-w-[22px] text-center px-1.5 py-1 rounded-md text-xs font-bold leading-none tabular-nums ${
+              filterStatus === filter.id ? "bg-white text-[var(--ink)]" : "bg-gray-100 text-gray-600"
             }`}>
               {filter.count}
             </span>
@@ -126,9 +128,8 @@ export function RequestListClient({ initialRequests, autoDeleteTimer }: { initia
           placeholder="Search by ref code, name, phone, email, college..." 
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full sm:max-w-md p-2 border text-sm outline-none focus:border-[var(--ink)] transition-colors bg-white"
-          style={{ borderColor: "var(--rule)" }}
-        />
+          className="w-full sm:max-w-md px-4 py-2.5 border-2 border-[var(--ink)] rounded-lg text-sm outline-none focus:ring-4 focus:ring-[var(--hi-soft)] transition-all bg-white"
+          />
         
         {filterStatus === "rejected" && counts.rejected > 0 && (
           <button
@@ -151,13 +152,13 @@ export function RequestListClient({ initialRequests, autoDeleteTimer }: { initia
         )}
       </div>
 
-      <div className="bg-white border divide-y" style={{ borderColor: "var(--rule)" }}>
+      <div className="space-y-3">
         {filtered.length === 0 ? (
-          <div className="p-8 text-center text-[var(--mute)] text-sm">
+          <div className="pop p-8 text-center text-[var(--mute)] text-sm bg-white border rounded-xl" style={{ borderColor: "var(--rule)" }}>
             No requests found.
           </div>
         ) : (
-          filtered.map(req => {
+          filtered.map((req, i) => {
             const urgency = getUrgency(req.deadline);
             const daysLeft = formatDaysLeft(req.deadline);
             let urgencyColor = "var(--ink)";
@@ -180,21 +181,22 @@ export function RequestListClient({ initialRequests, autoDeleteTimer }: { initia
             }
 
             return (
-              <div key={req.id} className="p-4 flex flex-col sm:flex-row gap-4 hover:bg-gray-50 transition-colors">
+              <div key={req.id} className="pop bg-white border rounded-xl p-3 sm:p-4 flex flex-row gap-3 sm:gap-4 hover:shadow-md hover:-translate-y-0.5 hover:border-[var(--hi)] transition-all" style={{ borderColor: "var(--rule)", animationDelay: `${Math.min(i, 10) * 35}ms` }}>
                 
                 <button 
                   onClick={() => handleToggleStar(req.id, req.starred)}
-                  className="text-xl leading-none focus:outline-none hidden sm:block mt-1"
+                  className="press text-xl leading-none focus:outline-none hidden sm:block mt-1"
                   style={{ color: req.starred ? "#EAB308" : "var(--rule)" }}
                 >
                   {req.starred ? "★" : "☆"}
                 </button>
 
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   <div className="flex justify-between items-start mb-1">
-                    <div className="text-xs font-semibold text-[var(--mute)]">
-                      <span className="sm:hidden mr-2" onClick={() => handleToggleStar(req.id, req.starred)} style={{ color: req.starred ? "#EAB308" : "var(--rule)" }}>{req.starred ? "★" : "☆"}</span>
-                      {req.studentName} · {req.college}
+                    <div className="text-xs font-semibold text-[var(--mute)] flex flex-wrap items-center gap-x-2 gap-y-1">
+                      <span className="sm:hidden" onClick={() => handleToggleStar(req.id, req.starred)} style={{ color: req.starred ? "#EAB308" : "var(--rule)" }}>{req.starred ? "★" : "☆"}</span>
+                      <span>{req.studentName} · {req.college}</span>
+                      <span className="sm:hidden font-mono font-bold text-[var(--ink)] bg-[var(--hi)] px-2 py-0.5 rounded-md">{req.refCode}</span>
                     </div>
                   </div>
                   
@@ -202,12 +204,12 @@ export function RequestListClient({ initialRequests, autoDeleteTimer }: { initia
                     href={`/x9/${req.id}`} 
                     className={`block ${req.status === "rejected" ? "pointer-events-none opacity-60" : ""}`}
                   >
-                    <div className="flex flex-wrap items-center gap-2 mb-2">
+                    <div className="flex flex-wrap items-center gap-2 mb-1.5 sm:mb-2">
                       <span className="font-bold text-base" style={titleStyle}>{req.title}</span>
-                      <span className="text-xs border px-1.5 py-0.5" style={{ borderColor: "var(--rule)", color: "var(--mute)" }}>
+                      <span className="text-xs border px-2 py-0.5 rounded-md" style={{ borderColor: "var(--rule)", color: "var(--mute)" }}>
                         {CATEGORY_LABELS[req.category] || req.category}
                       </span>
-                      <span className="text-xs border px-1.5 py-0.5" style={badgeStyle}>
+                      <span className="text-xs border px-2 py-0.5 rounded-md" style={badgeStyle}>
                         {STATUS_LABELS[req.status] || req.status}
                       </span>
                     </div>
@@ -223,8 +225,8 @@ export function RequestListClient({ initialRequests, autoDeleteTimer }: { initia
                   </Link>
                 </div>
 
-                <div className="flex flex-col items-end shrink-0 gap-2 mt-1">
-                  <div className="font-mono text-xs font-bold text-[var(--mute)]">{req.refCode}</div>
+                <div className="flex flex-col items-end justify-center sm:justify-start shrink-0 gap-2 sm:mt-1">
+                  <div className="hidden sm:block font-mono text-xs font-bold text-[var(--ink)] bg-[var(--hi)] px-2 py-0.5 rounded-md">{req.refCode}</div>
                   {req.status === "rejected" && req.rejectedAt && (() => {
                     const rejectedDate = new Date(req.rejectedAt);
                     const deleteDate = new Date(rejectedDate);
@@ -256,11 +258,12 @@ export function RequestListClient({ initialRequests, autoDeleteTimer }: { initia
                       </div>
                     );
                   })()}
-                  <button 
+                  <button
                     onClick={(e) => handleDeleteClick(req.id, e)}
-                    className="text-xs font-bold text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded transition-colors"
+                    aria-label="Delete request" title="Delete"
+                    className="press grid place-items-center w-9 h-9 text-red-800 sm:text-red-500 hover:text-red-700 bg-red-100 sm:bg-red-50 hover:bg-red-200 sm:hover:bg-red-100 rounded-lg"
                   >
-                    Delete
+                    <Trash2 size={17} />
                   </button>
                 </div>
 
@@ -273,7 +276,7 @@ export function RequestListClient({ initialRequests, autoDeleteTimer }: { initia
       {/* Delete Confirmation Modal */}
       {deletingId && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
-          <div className="bg-white p-6 max-w-sm w-full rounded shadow-xl animate-in zoom-in-95 duration-200">
+          <div className="bg-white p-6 max-w-sm w-full rounded-xl shadow-xl pop">
             <h3 className="text-lg font-bold text-[var(--ink)] mb-2">Delete Request?</h3>
             <p className="text-sm text-[var(--mute)] mb-6">
               Are you sure you want to delete this request? This action cannot be undone and will delete any attached files.
@@ -300,7 +303,7 @@ export function RequestListClient({ initialRequests, autoDeleteTimer }: { initia
       {/* Bulk Delete Confirmation Modal */}
       {confirmBulkDelete && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
-          <div className="bg-white p-6 max-w-sm w-full rounded shadow-xl animate-in zoom-in-95 duration-200">
+          <div className="bg-white p-6 max-w-sm w-full rounded-xl shadow-xl pop">
             <h3 className="text-lg font-bold text-[var(--ink)] mb-2">Delete All {confirmBulkDelete === 'rejected' ? 'Rejected' : 'Completed'}?</h3>
             <p className="text-sm text-[var(--mute)] mb-6">
               Are you sure you want to permanently delete <strong>ALL</strong> {confirmBulkDelete} projects? This action cannot be undone and will permanently delete all of their attached files.

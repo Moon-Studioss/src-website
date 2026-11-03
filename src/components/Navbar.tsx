@@ -48,7 +48,7 @@ export default function Navbar({ hideStore = false }: { hideStore?: boolean } = 
 
         <Link
           href="/submit"
-          className="hidden md:inline-flex press text-sm font-semibold px-4 py-2 rounded-full bg-[var(--ink)] text-white hover:opacity-90 transition-opacity"
+          className="hidden md:inline-flex paper-btn text-sm font-bold px-5 py-2.5 tracking-tight"
         >
           Submit project
         </Link>

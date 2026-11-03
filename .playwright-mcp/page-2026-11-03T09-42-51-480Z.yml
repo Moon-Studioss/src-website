@@ -1,0 +1,250 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - navigation [ref=e3]:
+      - link "SRC e-solutions" [ref=e4] [cursor=pointer]:
+        - /url: /
+        - generic [ref=e5]: SRC
+        - generic [ref=e6]: e-solutions
+      - generic [ref=e7]:
+        - link "How it works" [ref=e8] [cursor=pointer]:
+          - /url: /#how-it-works
+        - link "Our work" [ref=e9] [cursor=pointer]:
+          - /url: /#work
+        - link "Store" [ref=e10] [cursor=pointer]:
+          - /url: /store
+        - link "Track project" [ref=e11] [cursor=pointer]:
+          - /url: /status
+      - link "Submit project" [ref=e12] [cursor=pointer]:
+        - /url: /submit
+  - main [ref=e13]:
+    - generic [ref=e15]:
+      - generic [ref=e16]:
+        - heading "No project idea? Here you go." [level=1] [ref=e17]: No project idea?Here you go.
+        - paragraph [ref=e18]: Plug the wire into your branch, then press the red button. Every idea is a real project we can build for you.
+        - paragraph [ref=e19]:
+          - generic [ref=e20]: Have an idea already?
+          - link "Tell us about it" [ref=e21] [cursor=pointer]:
+            - /url: /submit
+      - generic [ref=e22]:
+        - generic [ref=e24]:
+          - generic [ref=e25]:
+            - img "Arduino board" [ref=e26]
+            - generic [aria-hidden] [ref=e29]:
+              - generic [ref=e30]: "CSE: MINI IDEA"
+              - generic [ref=e31]: PRESS RED BUTTON
+            - button "Branch CSE" [pressed] [ref=e33]:
+              - generic [ref=e35]: CSE
+            - button "Branch IT" [ref=e36]:
+              - generic [ref=e38]: IT
+            - button "Branch ECE" [ref=e39]:
+              - generic [ref=e41]: ECE
+            - button "Branch EEE" [ref=e42]:
+              - generic [ref=e44]: EEE
+            - button "Branch Mech" [ref=e45]:
+              - generic [ref=e47]: Mech
+            - paragraph [aria-hidden]: it compiled. don't touch it.
+            - paragraph [aria-hidden]: 1. drag wire to branch
+            - paragraph [aria-hidden]: 3. press!
+            - button "Press the red button to get a project idea" [ref=e49] [cursor=pointer]
+          - group "Project size" [ref=e51]:
+            - generic [aria-hidden] [ref=e52]: "2."
+            - button "mini project" [pressed] [ref=e53]
+            - button "major project" [ref=e56]
+        - status [ref=e57]
+    - generic [ref=e59]:
+      - heading "How it works" [level=2] [ref=e60]
+      - paragraph [ref=e61]: Your project travels this route. Track it anytime with your reference code. We take only projects we can deliver well, so not every request is accepted.
+      - list [ref=e62]:
+        - listitem [ref=e63]:
+          - generic [ref=e72]:
+            - paragraph [ref=e73]: Received
+            - paragraph [ref=e74]: Fill the 3-minute form with your idea, deadline and contact. Attach your synopsis if you have one.
+        - listitem [ref=e75]:
+          - generic [ref=e82]:
+            - paragraph [ref=e83]: Reviewing
+            - paragraph [ref=e84]: We read every request ourselves and check that we can build it well and on time.
+        - listitem [ref=e85]:
+          - generic [ref=e92]:
+            - paragraph [ref=e93]: Accepted
+            - paragraph [ref=e94]: If it's a fit, we call or WhatsApp you to agree the details and price.
+        - listitem [ref=e95]:
+          - generic [ref=e105]:
+            - paragraph [ref=e106]: Building
+            - paragraph [ref=e107]: We build your project and keep you posted along the way.
+        - listitem [ref=e108]:
+          - generic [ref=e117]:
+            - paragraph [ref=e118]: Delivered
+            - paragraph [ref=e119]: You get a working project before your deadline.
+    - generic [ref=e121]:
+      - heading "Projects we've built" [level=2] [ref=e122]
+      - paragraph [ref=e123]: Like one of these? Tell us, and we'll build yours the same way.
+      - generic [ref=e124]:
+        - link "IoT + Web Smart Attendance System RFID-based attendance with a live dashboard for college departments." [ref=e125] [cursor=pointer]:
+          - /url: /submit?category=iot
+          - generic [ref=e131]:
+            - generic [ref=e132]: IoT + Web
+            - heading "Smart Attendance System" [level=3] [ref=e133]
+            - paragraph [ref=e134]: RFID-based attendance with a live dashboard for college departments.
+        - link "ML / AI Crop Disease Detector Finds leaf diseases from a mobile photo with a trained CNN model." [ref=e135] [cursor=pointer]:
+          - /url: /submit?category=ml
+          - generic [ref=e146]:
+            - generic [ref=e147]: ML / AI
+            - heading "Crop Disease Detector" [level=3] [ref=e148]
+            - paragraph [ref=e149]: Finds leaf diseases from a mobile photo with a trained CNN model.
+        - link "Web App College Event Portal Event registration, scheduling and e-certificates in one place." [ref=e150] [cursor=pointer]:
+          - /url: /submit?category=web
+          - generic [ref=e157]:
+            - generic [ref=e158]: Web App
+            - heading "College Event Portal" [level=3] [ref=e159]
+            - paragraph [ref=e160]: Event registration, scheduling and e-certificates in one place.
+        - link "Desktop Student Fee Tracker Windows app for fee records, receipts and overdue alerts." [ref=e161] [cursor=pointer]:
+          - /url: /submit?category=software
+          - generic [ref=e166]:
+            - generic [ref=e167]: Desktop
+            - heading "Student Fee Tracker" [level=3] [ref=e168]
+            - paragraph [ref=e169]: Windows app for fee records, receipts and overdue alerts.
+        - link "ML / AI Traffic Flow Analyzer Counts vehicles and spots congestion from CCTV footage with OpenCV." [ref=e170] [cursor=pointer]:
+          - /url: /submit?category=ml
+          - generic [ref=e181]:
+            - generic [ref=e182]: ML / AI
+            - heading "Traffic Flow Analyzer" [level=3] [ref=e183]
+            - paragraph [ref=e184]: Counts vehicles and spots congestion from CCTV footage with OpenCV.
+        - link "Mobile App Pharmacy Inventory App Android stock management with expiry alerts and billing." [ref=e185] [cursor=pointer]:
+          - /url: /submit?category=app
+          - generic [ref=e190]:
+            - generic [ref=e191]: Mobile App
+            - heading "Pharmacy Inventory App" [level=3] [ref=e192]
+            - paragraph [ref=e193]: Android stock management with expiry alerts and billing.
+    - generic [ref=e195]:
+      - generic [ref=e196]:
+        - generic [ref=e197]:
+          - heading "Need parts?" [level=2] [ref=e198]
+          - paragraph [ref=e199]: Do It Yourself
+        - link "Open store" [ref=e200] [cursor=pointer]:
+          - /url: /store
+      - list [ref=e201]:
+        - listitem [ref=e202]:
+          - link [ref=e203] [cursor=pointer]:
+            - /url: /store?p=l298n-dual-h-bridge-motor-driver-module
+            - paragraph [ref=e205]: L298N Dual H-Bridge Motor Driver Module
+            - paragraph [ref=e206]: ₹130
+        - listitem [ref=e207]:
+          - link [ref=e208] [cursor=pointer]:
+            - /url: /store?p=nodemcu-esp8266-development-board
+            - paragraph [ref=e210]: NodeMCU ESP8266 Development Board
+            - paragraph [ref=e211]: ₹249
+        - listitem [ref=e212]:
+          - link [ref=e213] [cursor=pointer]:
+            - /url: /store?p=raspberry-pi-5-8gb-ram
+            - paragraph [ref=e215]: Raspberry Pi 5 (8GB RAM)
+            - paragraph [ref=e216]: ₹8,500
+        - listitem [ref=e217]:
+          - link [ref=e218] [cursor=pointer]:
+            - /url: /store?p=40-pin-premium-jumper-wires-male-to-female-20cm
+            - paragraph [ref=e220]: 40-Pin Premium Jumper Wires (Male to Female, 20cm)
+            - paragraph [ref=e221]: ₹65
+        - listitem [ref=e222]:
+          - link [ref=e223] [cursor=pointer]:
+            - /url: /store?p=mpu6050-3-axis-accelerometer-and-gyroscope
+            - paragraph [ref=e225]: MPU6050 3-Axis Accelerometer and Gyroscope
+            - paragraph [ref=e226]: ₹150
+        - listitem [ref=e227]:
+          - link [ref=e228] [cursor=pointer]:
+            - /url: /store?p=mq-2-smoke-and-combustible-gas-sensor-module
+            - paragraph [ref=e230]: MQ-2 Smoke and Combustible Gas Sensor Module
+            - paragraph [ref=e231]: ₹120
+        - listitem [ref=e232]:
+          - link [ref=e233] [cursor=pointer]:
+            - /url: /store?p=5v-1-channel-relay-module-with-optocoupler
+            - paragraph [ref=e235]: 5V 1-Channel Relay Module with Optocoupler
+            - paragraph [ref=e236]: ₹60
+        - listitem [ref=e237]:
+          - link [ref=e238] [cursor=pointer]:
+            - /url: /store?p=16x2-lcd-display-with-i2c-module-blue-green
+            - paragraph [ref=e240]: 16x2 LCD Display with I2C Module (Blue/Green)
+            - paragraph [ref=e241]: ₹190
+        - listitem [ref=e242]:
+          - link [ref=e243] [cursor=pointer]:
+            - /url: /store?p=sg90-9g-micro-servo-motor
+            - paragraph [ref=e245]: SG90 9g Micro Servo Motor
+            - paragraph [ref=e246]: ₹99
+        - listitem [ref=e247]:
+          - link [ref=e248] [cursor=pointer]:
+            - /url: /store?p=dht11-temperature-and-humidity-sensor
+            - paragraph [ref=e250]: DHT11 Temperature and Humidity Sensor
+            - paragraph [ref=e251]: ₹85
+        - listitem [ref=e252]:
+          - link "View more All 11 parts in the store" [ref=e253] [cursor=pointer]:
+            - /url: /store
+            - generic [ref=e257]: View more
+            - generic [ref=e258]: All 11 parts in the store
+    - generic [ref=e260]:
+      - heading "Tools we build with" [level=2] [ref=e261]
+      - paragraph [ref=e262]: The same tools your faculty expect to see in a final review.
+      - generic [ref=e263]:
+        - generic [ref=e264]:
+          - heading "Web" [level=3] [ref=e265]
+          - list [ref=e266]:
+            - listitem [ref=e267]: React
+            - listitem [ref=e268]: Next.js
+            - listitem [ref=e269]: Node.js
+            - listitem [ref=e270]: Django
+            - listitem [ref=e271]: PostgreSQL
+            - listitem [ref=e272]: Firebase
+        - generic [ref=e273]:
+          - heading "Mobile" [level=3] [ref=e274]
+          - list [ref=e275]:
+            - listitem [ref=e276]: Flutter
+            - listitem [ref=e277]: React Native
+            - listitem [ref=e278]: Kotlin
+            - listitem [ref=e279]: Android Studio
+        - generic [ref=e280]:
+          - heading "ML / AI" [level=3] [ref=e281]
+          - list [ref=e282]:
+            - listitem [ref=e283]: Python
+            - listitem [ref=e284]: TensorFlow
+            - listitem [ref=e285]: PyTorch
+            - listitem [ref=e286]: OpenCV
+        - generic [ref=e287]:
+          - heading "Hardware" [level=3] [ref=e288]
+          - list [ref=e289]:
+            - listitem [ref=e290]: Arduino
+            - listitem [ref=e291]: ESP32
+            - listitem [ref=e292]: Raspberry Pi
+            - listitem [ref=e293]: NodeMCU
+            - listitem [ref=e294]: "8051"
+    - generic [ref=e296]:
+      - heading "Questions students ask" [level=2] [ref=e297]
+      - generic [ref=e298]:
+        - group [ref=e299]:
+          - generic "Do I get the source code?" [ref=e300] [cursor=pointer]
+        - group [ref=e302]:
+          - generic "Will you help me understand the project for my viva?" [ref=e303] [cursor=pointer]
+        - group [ref=e305]:
+          - generic "How much does a project cost?" [ref=e306] [cursor=pointer]
+        - group [ref=e308]:
+          - generic "What if my deadline is very close?" [ref=e309] [cursor=pointer]
+        - group [ref=e311]:
+          - generic "How do I know what's happening with my project?" [ref=e312] [cursor=pointer]
+    - generic [ref=e315]:
+      - heading "Deadline coming? Start in 3 minutes." [level=2] [ref=e316]
+      - paragraph [ref=e317]: One form with your idea, deadline and budget. We read every request and reply to the ones we can take.
+      - generic [ref=e318]:
+        - link "Submit your project" [ref=e319] [cursor=pointer]:
+          - /url: /submit
+        - link "Spin for an idea" [ref=e320] [cursor=pointer]:
+          - /url: /#ideas
+  - contentinfo [ref=e321]:
+    - generic [ref=e322]:
+      - generic [ref=e323]:
+        - generic [ref=e324]: SRC
+        - generic [ref=e325]: e-solutions
+      - list [ref=e326]:
+        - listitem [ref=e327]:
+          - link "Visit our office, Vijayawada" [ref=e328] [cursor=pointer]:
+            - /url: https://maps.app.goo.gl/eCW1CFXnV53qjFi26?g_st=aw
+        - listitem [ref=e332]:
+          - link "Track project" [ref=e333] [cursor=pointer]:
+            - /url: /status
+      - generic [ref=e334]: © 2026 SRC e-solutions
+  - button "Open Next.js Dev Tools" [ref=e340] [cursor=pointer]

@@ -1,7 +1,6 @@
 import React from "react";
 import { Wrench, Cpu, Cable, CircuitBoard, Wifi } from "lucide-react";
 import Link from "next/link";
-import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
 interface UnderConstructionProps {
@@ -33,12 +32,10 @@ export function UnderConstruction({
         <Cable className="absolute bottom-[40%] left-[5%] w-16 h-16 animate-[pulse_5s_ease-in-out_infinite]" />
       </div>
 
-      <Navbar hideStore={hideStore} />
-
       <main className="flex-grow flex flex-col items-center justify-center p-4 relative z-10">
         <div className="max-w-md w-full text-center space-y-6 bg-white/70 backdrop-blur-md p-10 rounded-2xl border shadow-sm">
-          <div className="mx-auto w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center text-orange-600 mb-2">
-            <Wrench size={32} />
+          <div className="mx-auto w-16 h-16 bg-[var(--hi)] rounded-full flex items-center justify-center text-[var(--ink)] mb-2 shadow-[0_0_0_6px_var(--hi-soft)]">
+            <Wrench size={32} className="wrench-anim" />
           </div>
 
           <h1 className="text-4xl font-bold text-[var(--ink)] tracking-tight leading-tight">

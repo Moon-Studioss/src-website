@@ -2,8 +2,6 @@ import Link from "next/link";
 import { CircleCheck } from "lucide-react";
 import { CopyButton } from "./CopyButton";
 import { ConfettiOnMount } from "@/components/Confetti";
-import { getSettings } from "@/app/x9/settings-actions";
-import { isStoreClosed } from "@/lib/utils/helpers";
 
 export const metadata = {
   title: "Request Submitted — SRC e-solutions",
@@ -12,7 +10,6 @@ export const metadata = {
 export default async function SubmittedPage({ searchParams }: { searchParams: Promise<{ code?: string }> }) {
   const { code: rawCode } = await searchParams;
   const code = rawCode || "SRC-XXXX";
-  const settings = await getSettings();
 
   return (
     <div className="min-h-screen bg-[var(--paper)] grid-texture-faint px-4 pt-16 md:pt-28 pb-16">
@@ -40,11 +37,9 @@ export default async function SubmittedPage({ searchParams }: { searchParams: Pr
               <Link href={`/status/${code}`} className="press h-12 rounded-full bg-[var(--ink)] text-white font-semibold grid place-items-center">
                 Track my project
               </Link>
-              {!isStoreClosed(settings) && (
-                <Link href="/store" className="press h-12 rounded-full border border-[var(--rule)] text-[var(--ink)] font-semibold grid place-items-center">
-                  Need parts while you wait? Visit the store
-                </Link>
-              )}
+              <Link href="/store" className="press h-12 rounded-full border border-[var(--rule)] text-[var(--ink)] font-semibold grid place-items-center">
+                Need parts while you wait? Visit the store
+              </Link>
             </div>
           </div>
         </div>

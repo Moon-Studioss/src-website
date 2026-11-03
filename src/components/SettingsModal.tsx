@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Settings } from "lucide-react";
+import { Settings, SlidersHorizontal } from "lucide-react";
 import { getSettings, saveAllSettings } from "../app/x9/settings-actions";
 import { X, Save, ShieldAlert, CheckCircle2, Lock, Clock, Eye, EyeOff, ShoppingBag } from "lucide-react";
 
-export function SettingsModal({ mode = 'icon', onClick }: { mode?: 'icon' | 'menu-item', onClick?: () => void }) {
+export function SettingsModal({ mode = 'icon', onClick }: { mode?: 'icon' | 'menu-item' | 'tab', onClick?: () => void }) {
   const [isOpen, setIsOpen] = useState(false);
   const [isUnderConstruction, setIsUnderConstruction] = useState(false);
   const [isStoreUnderConstruction, setIsStoreUnderConstruction] = useState(false);
@@ -72,6 +72,11 @@ export function SettingsModal({ mode = 'icon', onClick }: { mode?: 'icon' | 'men
         >
           <Settings size={20} />
         </button>
+      ) : mode === 'tab' ? (
+        <button onClick={() => setIsOpen(true)} className="press flex flex-col items-center justify-end gap-1 pb-2 h-full w-full text-[11px] font-medium text-[var(--mute)]">
+          <span className="grid place-items-center" style={{ width: 34, height: 34 }}><SlidersHorizontal size={20} /></span>
+          Settings
+        </button>
       ) : (
         <button 
           onClick={() => { setIsOpen(true); onClick?.(); }}
@@ -83,8 +88,8 @@ export function SettingsModal({ mode = 'icon', onClick }: { mode?: 'icon' | 'men
 
       {isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-4xl overflow-hidden animate-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between px-6 py-4 border-b">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[92vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b-4 border-[var(--hi)] shrink-0">
               <h2 className="text-lg font-bold text-[var(--ink)] flex items-center gap-2">
                 <Settings size={20} className="text-[var(--mute)]" />
                 Global Settings
@@ -94,7 +99,7 @@ export function SettingsModal({ mode = 'icon', onClick }: { mode?: 'icon' | 'men
               </button>
             </div>
 
-            <div className="p-6">
+            <div className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-6 pt-4 sm:pt-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {loading ? (
                 <div className="flex justify-center p-4">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
@@ -103,53 +108,53 @@ export function SettingsModal({ mode = 'icon', onClick }: { mode?: 'icon' | 'men
                 <>
                   <div className="flex flex-col md:flex-row gap-8 items-start">
                     {/* LEFT COLUMN */}
-                    <div className="flex-1 space-y-4 max-h-[380px] overflow-y-auto pr-2 scroll-smooth [scrollbar-width:thin] [scrollbar-color:#DDE3EC_transparent] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-gray-400">
+                    <div className="w-full flex-1 space-y-3 md:space-y-4 md:max-h-[380px] md:overflow-y-auto md:pr-2 scroll-smooth [scrollbar-width:thin] [scrollbar-color:#DDE3EC_transparent] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-gray-400">
                       {/* Under Construction Toggle */}
-                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border">
+                      <div className="flex items-center justify-between gap-3 p-4 bg-[var(--paper-2)] rounded-xl border">
                         <div>
                           <h3 className="font-semibold text-[var(--ink)] flex items-center gap-1.5">
                             <ShieldAlert size={16} className="text-orange-500" />
                             Under Construction Mode
                           </h3>
                           <p className="text-sm text-gray-500 mt-1">
-                            Block all public access and show a 404 page.
+                            Block the whole public site and show an error page.
                           </p>
                         </div>
-                        <label className="relative inline-flex items-center cursor-pointer">
+                        <label className="relative inline-flex items-center cursor-pointer shrink-0">
                           <input 
                             type="checkbox" 
                             className="sr-only peer" 
                             checked={isUnderConstruction}
                             onChange={(e) => setIsUnderConstruction(e.target.checked)}
                           />
-                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500"></div>
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--hi)]"></div>
                         </label>
                       </div>
 
                       {/* Store Under Construction Toggle */}
-                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border">
+                      <div className="flex items-center justify-between gap-3 p-4 bg-[var(--paper-2)] rounded-xl border">
                         <div>
                           <h3 className="font-semibold text-[var(--ink)] flex items-center gap-1.5">
                             <ShoppingBag size={16} className="text-orange-500" />
-                            Store Under Construction
+                            Can't take orders now
                           </h3>
                           <p className="text-sm text-gray-500 mt-1">
-                            Hide store in navigation &amp; show under construction on /store.
+                            Store stays browsable. A popup shows on the store and "Send order on WhatsApp" is blocked.
                           </p>
                         </div>
-                        <label className="relative inline-flex items-center cursor-pointer">
+                        <label className="relative inline-flex items-center cursor-pointer shrink-0">
                           <input 
                             type="checkbox" 
                             className="sr-only peer" 
                             checked={isStoreUnderConstruction}
                             onChange={(e) => setIsStoreUnderConstruction(e.target.checked)}
                           />
-                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500"></div>
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--hi)]"></div>
                         </label>
                       </div>
 
                       {/* Auto Delete Timer Dropdown */}
-                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border">
+                      <div className="flex items-center justify-between gap-3 p-4 bg-[var(--paper-2)] rounded-xl border">
                         <div>
                           <h3 className="font-semibold text-[var(--ink)] flex items-center gap-1.5">
                             <Clock size={16} className="text-blue-500" />
@@ -174,7 +179,7 @@ export function SettingsModal({ mode = 'icon', onClick }: { mode?: 'icon' | 'men
                       </div>
 
                       {/* Overdue Auto-Delete Dropdown */}
-                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border">
+                      <div className="flex items-center justify-between gap-3 p-4 bg-[var(--paper-2)] rounded-xl border">
                         <div>
                           <h3 className="font-semibold text-[var(--ink)] flex items-center gap-1.5">
                             <Clock size={16} className="text-red-500" />
@@ -197,7 +202,7 @@ export function SettingsModal({ mode = 'icon', onClick }: { mode?: 'icon' | 'men
                       </div>
 
                       {/* WhatsApp Template */}
-                      <div className="p-4 bg-gray-50 rounded-lg border">
+                      <div className="p-4 bg-[var(--paper-2)] rounded-xl border">
                         <div className="flex items-center gap-2 mb-1">
                           <span className="text-[var(--ink)]">💬</span>
                           <div className="font-semibold text-sm text-[var(--ink)]">WhatsApp Message Template</div>
@@ -219,7 +224,7 @@ export function SettingsModal({ mode = 'icon', onClick }: { mode?: 'icon' | 'men
                     <div className="hidden md:block w-px self-stretch bg-gray-200"></div>
 
                     {/* RIGHT COLUMN */}
-                    <div className="flex-1 space-y-6">
+                    <div className="w-full flex-1 space-y-6">
                       {/* Change Password */}
                       <div className="space-y-4">
                         <h3 className="font-semibold text-[var(--ink)] flex items-center gap-1.5 border-b pb-2">
@@ -277,16 +282,16 @@ export function SettingsModal({ mode = 'icon', onClick }: { mode?: 'icon' | 'men
                     </div>
                   </div>
 
-                  <div className="mt-8 pt-4 border-t flex justify-end gap-3">
+                  <div className="mt-6 py-4 border-t flex gap-3 sm:justify-end sticky bottom-0 bg-white">
                     <button 
                       onClick={() => setIsOpen(false)}
-                      className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                      className="flex-1 sm:flex-none px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                     >
                       Cancel
                     </button>
                     <button 
                       onClick={handleSave}
-                      className="px-4 py-2 text-sm font-medium text-white bg-black rounded-lg hover:bg-gray-800 transition-colors flex items-center gap-1.5"
+                      className="flex-1 sm:flex-none justify-center px-4 py-2.5 press text-sm font-bold text-[var(--ink)] bg-[var(--hi)] rounded-lg hover:brightness-95 flex items-center gap-1.5"
                     >
                       <Save size={16} />
                       Save Settings

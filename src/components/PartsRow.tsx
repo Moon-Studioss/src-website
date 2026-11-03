@@ -34,7 +34,7 @@ export default async function PartsRow() {
             const img = (p.images as string[] | null)?.[0];
             return (
               <li key={p.id} className={`snap-start shrink-0 w-40 ${i >= MOBILE_COUNT ? "hidden md:block" : ""}`}>
-                <Link href={`/store?q=${encodeURIComponent(p.name)}`} className="press block bg-white rounded-2xl border border-[var(--rule)] p-3 h-full">
+                <Link href={p.slug ? `/store?p=${p.slug}` : `/store?q=${encodeURIComponent(p.name)}`} className="press block bg-white rounded-2xl border border-[var(--rule)] p-3 h-full">
                   <div className="aspect-square rounded-xl bg-[var(--paper-2)] overflow-hidden grid place-items-center mb-2">
                     {img ? <img src={img} alt="" className="w-full h-full object-cover" loading="lazy" /> : <span className="text-xs text-[var(--mute)]">No photo</span>}
                   </div>

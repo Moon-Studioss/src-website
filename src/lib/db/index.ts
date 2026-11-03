@@ -3,6 +3,12 @@ import { drizzle } from "drizzle-orm/neon-serverless";
 import * as schema from "./schema";
 
 import ws from "ws";
+import { setDefaultAutoSelectFamilyAttemptTimeout } from "node:net";
+
+// Node 24 lets each address of a host (Neon has IPv6 + IPv4) try for only 250ms before moving on.
+// On a slower link every address times out and the connection dies with a WebSocket "ErrorEvent"
+// (measured: 5 of 12 fresh connections failed, 0 of 16 with this).
+setDefaultAutoSelectFamilyAttemptTimeout(10_000);
 
 // Force using the `ws` package instead of native fetch/WebSocket.
 // Next.js sometimes polyfills `globalThis.WebSocket` with a buggy implementation
@@ -16,14 +22,20 @@ neonConfig.pipelineConnect = false;
 
 const globalForDb = globalThis as unknown as {
   pool: Pool | undefined;
+  poolUrl: string | undefined;
 };
 
+const url = process.env.DATABASE_URL!;
+
+// In dev the pool outlives hot reloads, so rebuild it if .env.local's URL changed.
 const pool =
-  globalForDb.pool ??
-  new Pool({ connectionString: process.env.DATABASE_URL! });
+  globalForDb.pool && globalForDb.poolUrl === url
+    ? globalForDb.pool
+    : new Pool({ connectionString: url });
 
 if (process.env.NODE_ENV !== "production") {
   globalForDb.pool = pool;
+  globalForDb.poolUrl = url;
 }
 
 export const db = drizzle(pool, { schema });

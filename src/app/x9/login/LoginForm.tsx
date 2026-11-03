@@ -29,7 +29,7 @@ export function LoginForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {error && (
-        <div className="p-3 bg-red-50 text-red-600 border border-red-200 text-sm">
+        <div className="pop p-3 bg-red-50 text-red-600 border border-red-200 rounded-xl text-sm">
           {error}
         </div>
       )}
@@ -40,7 +40,7 @@ export function LoginForm() {
           type="email" 
           name="email" 
           required 
-          className="w-full p-3 border outline-none focus:border-[var(--ink)] transition-colors"
+          className="w-full px-4 py-3 border rounded-lg outline-none focus:border-[var(--ink)] focus:ring-4 focus:ring-[var(--hi-soft)] transition-all"
           style={{ borderColor: "var(--rule)", background: "var(--paper)" }}
         />
       </div>
@@ -52,7 +52,7 @@ export function LoginForm() {
             type={showPassword ? "text" : "password"} 
             name="password" 
             required 
-            className="w-full p-3 border outline-none focus:border-[var(--ink)] transition-colors pr-12"
+            className="w-full px-4 py-3 border rounded-lg outline-none focus:border-[var(--ink)] focus:ring-4 focus:ring-[var(--hi-soft)] transition-all pr-12"
             style={{ borderColor: "var(--rule)", background: "var(--paper)" }}
           />
           <button
@@ -72,7 +72,7 @@ export function LoginForm() {
       <button 
         type="submit" 
         disabled={loading}
-        className="w-full py-3 bg-[var(--ink)] text-white font-bold transition-opacity hover:opacity-90 disabled:opacity-50 mt-4"
+        className="press w-full py-3 bg-[var(--hi)] text-[var(--ink)] rounded-lg font-bold hover:brightness-95 disabled:opacity-50 mt-4"
       >
         {loading ? "Authenticating..." : "Login to Dashboard"}
       </button>

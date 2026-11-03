@@ -1,4 +1,5 @@
-import { Inbox, Eye, CircleCheck, CookingPot, GraduationCap, Check } from "lucide-react";
+import type { CSSProperties } from "react";
+import { Inbox, Eye, CircleCheck, CookingPot, GraduationCap, Check, ArrowDown } from "lucide-react";
 
 // The delivery-style route a project travels. Used twice so it feels familiar:
 //   - home page "How it works" (no `current`): every stage explained
@@ -24,33 +25,40 @@ export const STAGES = [
 export function ProjectRoute({ current }: { current?: number }) {
   const tracking = current !== undefined;
   return (
-    <ol className={`relative grid gap-0 ${tracking ? "" : "md:grid-cols-5 md:gap-6"}`}>
+    <ol className={`relative grid gap-0 ${tracking ? "" : "route-play md:grid-cols-5 md:gap-6"}`}>
       {STAGES.map((s, i) => {
         const state = !tracking ? "info" : i < current ? "done" : i === current ? "now" : "next";
         const Icon = state === "done" ? Check : s.icon;
         const last = i === STAGES.length - 1;
         return (
-          <li key={s.status} className={`relative flex gap-4 ${tracking ? "pb-7" : "pb-8 md:pb-0 md:flex-col md:gap-3"} last:pb-0`}>
+          <li
+            key={s.status}
+            style={{ "--i": i } as CSSProperties}
+            className={`relative flex gap-4 route-s${i} ${tracking ? "pb-7" : "pb-8 md:pb-0 md:flex-col md:gap-3"} last:pb-0`}
+          >
             {/* connector line */}
             {!last && (
               <span
                 aria-hidden
-                className={`absolute left-[19px] top-10 bottom-0 w-[2px] ${tracking ? "" : "md:left-10 md:right-[-24px] md:top-[19px] md:bottom-auto md:w-auto md:h-[2px]"}`}
+                className={`route-line absolute left-[19px] top-10 bottom-0 w-[2px] ${tracking ? "" : "md:left-10 md:right-[-24px] md:top-[19px] md:bottom-auto md:w-auto md:h-[2px]"}`}
                 style={{
                   background: state === "done" ? "var(--go)" : "transparent",
                   backgroundImage: state === "done" ? undefined : "repeating-linear-gradient(var(--rule) 0 6px, transparent 6px 11px)",
                 }}
-              />
+              >
+                {!tracking && <span className="route-streak" />}
+              </span>
             )}
             <span
-              className={`relative z-10 grid place-items-center shrink-0 w-10 h-10 rounded-full ${state === "now" ? "route-now" : ""}`}
+              className={`route-dot relative z-10 grid place-items-center shrink-0 w-10 h-10 rounded-full ${state === "now" ? "route-now" : ""}`}
               style={{
                 background: state === "done" ? "var(--go)" : state === "now" ? "var(--hi)" : state === "next" ? "var(--paper-2)" : "#fff",
                 color: state === "done" ? "#fff" : state === "next" ? "var(--mute)" : "var(--ink)",
                 border: state === "info" ? "2px solid var(--ink)" : state === "next" ? "1px solid var(--rule)" : "none",
               }}
             >
-              <Icon size={18} strokeWidth={2.2} />
+              <Icon size={18} strokeWidth={2.2} className="route-ic" />
+              {!tracking && <StageFx i={i} />}
             </span>
             <div className="min-w-0 pt-1.5 md:pt-0">
               <p className={`font-semibold ${state === "next" ? "text-[var(--mute)]" : "text-[var(--ink)]"}`}>{s.label}</p>
@@ -66,4 +74,12 @@ export function ProjectRoute({ current }: { current?: number }) {
       })}
     </ol>
   );
+}
+
+// Decorative extras for the home-page animation (see .route-play in globals.css)
+function StageFx({ i }: { i: number }) {
+  if (i === 0) return <ArrowDown aria-hidden size={11} strokeWidth={3} className="route-arrow" />;
+  if (i === 3) return (<><span aria-hidden className="route-steam" /><span aria-hidden className="route-steam" /></>);
+  if (i === 4) return (<>{[0, 1, 2, 3].map((k) => <span aria-hidden key={k} className="route-conf" />)}</>);
+  return null;
 }
