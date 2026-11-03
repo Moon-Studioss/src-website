@@ -10,7 +10,7 @@ export const metadata = {
 // Focus mode: no tab bar here (see BottomTabBar), just a way out.
 export default function SubmitPage() {
   return (
-    <div className="min-h-screen bg-[var(--paper)]">
+    <div className="min-h-screen bg-[var(--paper)] grid-texture-faint">
       <header className="max-w-2xl mx-auto px-6 h-14 flex items-center justify-between">
         <Link href="/" className="flex items-baseline gap-1 select-none">
           <span className="font-display text-xl font-extrabold text-[var(--ink)]">SRC</span>

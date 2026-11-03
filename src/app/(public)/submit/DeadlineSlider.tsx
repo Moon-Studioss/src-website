@@ -44,7 +44,7 @@ export function DeadlineSlider({ deadline, onChange }: { deadline: string; onCha
         value={days}
         onChange={(e) => set(Number(e.target.value))}
         aria-valuetext={realDays === null ? "Not set" : `${days} days left`}
-        className="mt-5 w-full accent-[var(--ink)] h-8 cursor-pointer"
+        className="mt-5 w-full accent-[var(--hi)] h-8 cursor-pointer"
       />
       <div className="flex justify-between text-sm">
         <label htmlFor="deadline-days" className="font-semibold text-[var(--ink)] tabular">

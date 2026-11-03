@@ -36,7 +36,10 @@ function StatusForm() {
           spellCheck={false}
           value={code}
           onChange={(e) => {
-            setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""));
+            // Pasting a whole "SRC-JQEZ" keeps only "JQEZ", since the SRC- is already on screen
+            let v = e.target.value.toUpperCase().replace(/^\s*SRC-/, "").replace(/[^A-Z0-9]/g, "");
+            if (v.length > 4 && v.startsWith("SRC")) v = v.slice(3);
+            setCode(v);
             setError("");
           }}
           placeholder="7K2M"

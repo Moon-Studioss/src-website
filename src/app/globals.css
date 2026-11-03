@@ -351,6 +351,9 @@ html::-webkit-scrollbar { display: none; }
 }
 @keyframes route-lit { 0% { opacity: 0; } 2%, 8% { opacity: 1; } 12%, 100% { opacity: 0; } }
 
+/* status page: only the current stage plays (it gets route-s*, the others none), and only its dot lights up */
+.route-track .route-dot:not(.route-now)::before { content: none; }
+
 .route-play .route-ic,
 .route-play .route-ic *,
 .route-play .route-dot::before,

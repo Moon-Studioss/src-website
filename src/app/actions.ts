@@ -5,6 +5,7 @@ import { requests, attachments } from "@/lib/db/schema";
 import { generateRefCode } from "@/lib/utils/helpers";
 import { or, eq, gte, and } from "drizzle-orm";
 import { after } from "next/server";
+import { UTApi } from "uploadthing/server";
 import { sendEmail, newRequestAlert, requestConfirmation } from "@/lib/email";
 
 export type SubmitResult =
@@ -94,5 +95,18 @@ export async function submitProjectRequest(formData: any): Promise<SubmitResult>
     console.error("Error Detail:", error.detail);
     console.error("Error Message:", error.message);
     return { success: false, error: error.message || "Failed to submit request" };
+  }
+}
+
+// Student pressed the cross on a file they just uploaded: delete it from storage.
+// Only files that no request has claimed yet can go, so this can't be used to wipe a submitted attachment.
+export async function discardUpload(storageKey: string): Promise<void> {
+  if (typeof storageKey !== "string" || !storageKey) return;
+  try {
+    const [claimed] = await db.select({ id: attachments.id }).from(attachments).where(eq(attachments.storageKey, storageKey)).limit(1);
+    if (claimed) return;
+    await new UTApi().deleteFiles(storageKey);
+  } catch (e) {
+    console.error("discardUpload failed:", e);
   }
 }
