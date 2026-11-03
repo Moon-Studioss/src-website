@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ShoppingBag, Package, X } from "lucide-react";
 import Link from "next/link";
@@ -15,7 +16,22 @@ const input = "w-full rounded-xl border border-[var(--rule)] bg-white px-3 py-2.
 export function Cart() {
   const { lines, count, total, bump, cartOpen, setCartOpen, changeQty, details, setDetails, ordersClosed } = useStore();
 
-  const ready = details.name.trim().length > 1 && details.address.trim().length > 7;
+  // The PIN is the last 6-digit number in the address; it has to exist before the order can go out
+  const pin = details.address.match(/(?<!\d)[1-9]\d{5}(?!\d)/g)?.pop();
+  const [pinCheck, setPinCheck] = useState<{ pin: string; valid: boolean | null; place?: string } | null>(null);
+  useEffect(() => {
+    if (!pin) return;
+    const ctl = new AbortController();
+    const t = setTimeout(() => {
+      fetch(`/api/pincode?pin=${pin}`, { signal: ctl.signal })
+        .then((r) => r.json())
+        .then((d) => setPinCheck({ pin, ...d }))
+        .catch(() => {});
+    }, 400);
+    return () => { clearTimeout(t); ctl.abort(); };
+  }, [pin]);
+  const pinState = !pin ? "missing" : pinCheck?.pin !== pin ? "checking" : pinCheck.valid === false ? "bad" : "ok"; // lookup down (valid null) lets the order through
+  const ready = details.name.trim().length > 1 && details.address.trim().length > 7 && pinState === "ok";
   const send = () => {
     if (ordersClosed || !WHATSAPP_NUMBER || !ready) return;
     window.open(whatsappLink(WHATSAPP_NUMBER, orderMessage(lines, details, orderCode())), "_blank", "noopener");
@@ -115,12 +131,18 @@ export function Cart() {
                     <button onClick={send} disabled={ordersClosed || !ready || !WHATSAPP_NUMBER} className="press w-full py-3.5 rounded-2xl bg-[#25D366] text-white font-bold text-base disabled:opacity-45 disabled:cursor-not-allowed">
                       Send order on WhatsApp
                     </button>
-                    <p className={`text-center ${ordersClosed || !WHATSAPP_NUMBER ? "text-sm font-bold text-red-600" : "text-xs text-[var(--mute)]"}`}>
+                    <p className={`text-center ${ordersClosed || !WHATSAPP_NUMBER ? "text-sm font-bold text-red-600" : pinState === "bad" ? "text-sm font-semibold text-red-600" : "text-xs text-[var(--mute)]"}`}>
                       {ordersClosed || !WHATSAPP_NUMBER
                         ? "Ordering is not available right now. Please try again later."
-                        : !ready
+                        : details.name.trim().length < 2 || details.address.trim().length < 8
                           ? "Add your name and address to send the order."
-                          : "WhatsApp opens with your order typed in. We confirm stock and delivery cost there, then you pay in the chat."}
+                          : pinState === "missing"
+                            ? "Add your 6-digit PIN code to the address."
+                            : pinState === "checking"
+                              ? "Checking your PIN code…"
+                              : pinState === "bad"
+                                ? "This PIN code doesn't exist. Please check it."
+                                : (pinCheck?.place ? `PIN ${pin}: ${pinCheck.place}. ` : "") + "WhatsApp opens with your order typed in. We confirm stock and delivery cost there, then you pay in the chat."}
                     </p>
                   </div>
                 </>
