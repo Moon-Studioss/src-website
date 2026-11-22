@@ -40,6 +40,15 @@ CLAUDE.md
 .playwright-mcp/
 graphify-out/
 
+# ─── Database internals: generated migrations / snapshots / dumps ───
+# (drizzle-kit output maps every table and column; the app never reads it at runtime,
+#  and `npm run db:push` compares src/lib/db/schema.ts with the database directly)
+/drizzle/
+*.sql
+*.dump
+*.backup
+*.bak
+
 # ─── One-off / scratch scripts (may touch the database directly) ────
 /check_db.ts
 /fix_db.ts

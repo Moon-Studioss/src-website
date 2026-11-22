@@ -1,36 +1,83 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# SRC e-solutions
 
-## Getting Started
+Website for **SRC e-solutions**, a studio that builds final-year and mini projects for engineering students and sells the electronics parts those projects need.
 
-First, run the development server:
+## What the site does
+
+- **Project ideas.** The home page has a hands-on "student bench": plug a wire into your branch (CSE, IT, ECE, EEE, Mech), press the button, and get a real project idea you can ask us to build.
+- **Submit a project.** A short guided form for students to describe their project, pick a deadline, and attach a file. Each request gets a reference code.
+- **Track a project.** Students check the status of their request with that reference code.
+- **Parts store.** Browse electronics parts by category, search, add to a cart, and send the order on WhatsApp. There is no online payment: price, delivery and payment are confirmed in the chat. Some products include a downloadable product document.
+- **Admin panel.** A private dashboard for the owner to manage project requests, products, categories and site settings.
+
+## Tech stack
+
+- [Next.js](https://nextjs.org) (App Router) with React and TypeScript
+- Tailwind CSS, with a few shadcn/ui components
+- PostgreSQL with [Drizzle ORM](https://orm.drizzle.team)
+- [Uploadthing](https://uploadthing.com) for file and photo uploads
+- [Resend](https://resend.com) for email notifications
+- Framer Motion for animation
+- Deployed on Vercel
+
+## Running it locally
+
+You need Node.js 20 or newer and a PostgreSQL database.
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+cp .env.example .env.local   # then fill in your own values
+npm run db:push              # create the tables in your database
+npm run dev                  # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Environment variables
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Put these in `.env.local`. That file is git-ignored, so **never commit real values**.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Variable | What it is for |
+|---|---|
+| `DATABASE_URL` | PostgreSQL connection string |
+| `JWT_SECRET` | Long random string used to sign admin sessions |
+| `ADMIN_EMAIL`, `ADMIN_PASSWORD` | First admin login (change the password after the first sign-in) |
+| `UPLOADTHING_TOKEN` | Uploadthing API token |
+| `CLEANUP_SECRET` | Shared secret for the scheduled clean-up job |
+| `RESEND_API_KEY`, `EMAIL_FROM`, `OWNER_EMAIL` | Email notifications (optional; emails are skipped when unset) |
+| `NEXT_PUBLIC_APP_URL` | Public site URL, used in email links |
+| `NEXT_PUBLIC_WHATSAPP_NUMBER` | WhatsApp number that store orders are sent to (country code, digits only) |
 
-## Learn More
+Anything starting with `NEXT_PUBLIC_` is visible in the browser, so never put a secret in one.
 
-To learn more about Next.js, take a look at the following resources:
+## Scripts
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| Command | What it does |
+|---|---|
+| `npm run dev` | Start the development server |
+| `npm run build` | Production build |
+| `npm run start` | Serve the production build |
+| `npm run lint` | Lint the code |
+| `npm run db:push` | Sync the schema in `src/lib/db/schema.ts` to the database. Review what it plans to do, and never run it with `--force` on a database that holds real data. |
+| `npm run db:studio` | Browse the database in Drizzle Studio |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Quick self-checks for the pure helpers (no test framework needed):
 
-## Deploy on Vercel
+```bash
+node src/lib/store.check.ts
+node src/lib/ideas.check.ts
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Project layout
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+src/
+  app/
+    (public)/      public pages: home, submit, status, store
+    api/           upload, clean-up and pincode endpoints
+  components/      shared UI
+  lib/             database, auth, email, store and idea helpers
+public/            images served as-is
+```
+
+## Security
+
+Please don't open public issues for security problems. Contact the maintainers privately instead.
