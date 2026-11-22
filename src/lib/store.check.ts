@@ -1,7 +1,7 @@
 // Self-check for the store helpers. Run: node src/lib/store.check.ts
 import assert from "node:assert/strict";
 import type { Product } from "./db/schema.ts";
-import { filterSort, isDocLink, noFilters, orderMessage, parseSpecs, percentOff, pickTileImages, reconcileCart, searchProducts, slugify, uniqueSlug, whatsappLink } from "./store.ts";
+import { filterSort, isDocLink, noFilters, orderMessage, parseSpecs, percentOff, pickTileImages, reconcileCart, searchProducts, slugify, suggestProducts, uniqueSlug, whatsappLink } from "./store.ts";
 
 const P = (o: Partial<Product>): Product => ({
   id: "x", name: "Item", description: null, price: 10000, category: null, images: [], inStock: true, featured: false,
@@ -16,6 +16,20 @@ assert.ok(!isDocLink("javascript:alert(1)"));
 assert.ok(!isDocLink("http://drive.google.com/file/d/abc"));
 assert.ok(!isDocLink("https://drive.google.com.evil.com/x"));
 assert.ok(!isDocLink("https://example.com/file.pdf"));
+
+// Search suggestions: only store products, name-prefix first, in-stock before out-of-stock, capped
+{
+  const items = [
+    P({ id: "a", name: "Pi Camera for Raspberry Pi" }),
+    P({ id: "b", name: "Raspberry Pi 5 (8GB RAM)", inStock: false }),
+    P({ id: "c", name: "Raspberry Pi 4" }),
+    P({ id: "d", name: "Servo SG90" }),
+  ];
+  assert.deepEqual(suggestProducts(items, "rasp").map((p) => p.id), ["c", "b", "a"]);
+  assert.deepEqual(suggestProducts(items, "  "), []);
+  assert.deepEqual(suggestProducts(items, "zzz"), []);
+  assert.equal(suggestProducts(items, "pi", 2).length, 2);
+}
 
 // Slugs: readable, and clashes get a number
 assert.equal(slugify("Motors & Actuators"), "motors-actuators");

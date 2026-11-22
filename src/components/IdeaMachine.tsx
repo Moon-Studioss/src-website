@@ -4,7 +4,7 @@ import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from
 import Link from "next/link";
 import { motion, AnimatePresence, useReducedMotion, animate } from "framer-motion";
 import { Caveat, Permanent_Marker, VT323 } from "next/font/google";
-import { RotateCw, Send, X } from "lucide-react";
+import { Send, X } from "lucide-react";
 import { Confetti, makeBits, type Bit } from "./Confetti";
 import { BRANCHES, IDEAS, ideasFor, pickNext, type Branch, type Idea, type Level } from "@/lib/ideas";
 
@@ -202,8 +202,8 @@ const Squiggle = ({ className = "" }: { className?: string }) => (
 );
 
 // The idea, written up like a lab notebook page, taped to the desk
-function NotebookOverlay({ receipt, storeOpen, reduced, bits, burst, ticked, onTick, onSpin, onClosed }: {
-  receipt: Receipt; storeOpen: boolean; reduced: boolean; bits: Bit[]; burst: number; ticked: string[]; onTick: (part: string) => void; onSpin: () => void; onClosed: () => void;
+function NotebookOverlay({ receipt, storeOpen, reduced, bits, burst, ticked, onTick, onClosed }: {
+  receipt: Receipt; storeOpen: boolean; reduced: boolean; bits: Bit[]; burst: number; ticked: string[]; onTick: (part: string) => void; onClosed: () => void;
 }) {
   const cardRef = useRef<HTMLDivElement>(null);
   const fitRef = useRef<HTMLDivElement>(null);
@@ -354,13 +354,13 @@ function NotebookOverlay({ receipt, storeOpen, reduced, bits, burst, ticked, onT
 
           <motion.div
             ref={btnRef}
-            className="w-full max-w-[380px] grid grid-cols-2 gap-3 px-1"
+            className="w-full max-w-[380px] flex justify-center px-1"
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: reduced ? 0 : 0.3 }}
           >
-            {/* Two strips of masking tape, written on with the marker. The wrapper carries the shadow and tilt (a shadow on the clipped tape itself would be cut off). */}
-            <span className="nb-tape-wrap" style={{ rotate: "-1.6deg" }}>
+            {/* A strip of masking tape, written on with the marker. The wrapper carries the shadow and tilt (a shadow on the clipped tape itself would be cut off). */}
+            <span className="nb-tape-wrap w-[min(100%,220px)]" style={{ rotate: "-1.6deg" }}>
               <a
                 href={`https://wa.me/?text=${encodeURIComponent(`${shareText} ${typeof window === "undefined" ? "" : window.location.origin}/#ideas`)}`}
                 onClick={share}
@@ -370,11 +370,6 @@ function NotebookOverlay({ receipt, storeOpen, reduced, bits, burst, ticked, onT
               >
                 <Send size={16} strokeWidth={2.4} aria-hidden /> Send to my group
               </a>
-            </span>
-            <span className="nb-tape-wrap" style={{ rotate: "1.4deg" }}>
-              <button type="button" onClick={onSpin} className={`nb-tape-btn ${marker.className}`}>
-                <RotateCw size={16} strokeWidth={2.6} aria-hidden /> Spin again
-              </button>
             </span>
           </motion.div>
         </div>
@@ -699,7 +694,6 @@ export default function IdeaMachine({ storeOpen = true }: { storeOpen?: boolean 
             burst={burst}
             ticked={ticks[receipt.idea.id] ?? []}
             onTick={(part) => setTicks((t) => { const cur = t[receipt.idea.id] ?? []; return { ...t, [receipt.idea.id]: cur.includes(part) ? cur.filter((x) => x !== part) : [...cur, part] }; })}
-            onSpin={spin}
             onClosed={() => setPhase("stub")}
           />
         )}

@@ -73,6 +73,22 @@ export function searchProducts(items: Product[], q: string): Product[] {
   });
 }
 
+/** Search-box suggestions: the store's own matching products, best first (name starts with the
+ *  query, then a name match, then in stock), capped at `max`. Empty query → none. */
+export function suggestProducts(items: Product[], q: string, max = 6): Product[] {
+  const query = q.trim().toLowerCase();
+  if (!query) return [];
+  const score = (p: Product) => {
+    const name = p.name.toLowerCase();
+    return (name.startsWith(query) ? 4 : 0) + (name.includes(query) ? 2 : 0) + (p.inStock ? 1 : 0);
+  };
+  return searchProducts(items, query)
+    .map((p) => ({ p, s: score(p) }))
+    .sort((a, b) => b.s - a.s || a.p.name.localeCompare(b.p.name))
+    .slice(0, max)
+    .map((x) => x.p);
+}
+
 // ─── Category tiles ──────────────────────────────────────────────
 /** Cut-out artwork (public/categories) for the shop-front tiles, keyed by category slug.
  *  A category without art falls back to a product photo, then a letter. */
