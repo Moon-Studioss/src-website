@@ -5,7 +5,7 @@ import { products, productCategories } from "@/lib/db/schema";
 import { eq, asc } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth";
-import { uniqueSlug, type Spec } from "@/lib/store";
+import { isDocLink, uniqueSlug, type Spec } from "@/lib/store";
 
 const refresh = () => {
   revalidatePath("/x9/store");
@@ -72,10 +72,14 @@ type ProductInput = {
   specs: Spec[];
   inStock: boolean;
   featured: boolean;
+  docUrl: string;          // Google Drive link, or ""
 };
 
 // Everything except slug / timestamps, shaped for the table (money in paise)
-const fields = (data: ProductInput) => ({
+const fields = (data: ProductInput) => {
+  const docUrl = data.docUrl.trim();
+  if (!isDocLink(docUrl)) throw new Error("Document link must be a Google Drive or Google Docs link (https://drive.google.com/...)");
+  return {
   name: data.name,
   description: data.description || null,
   price: Math.round(data.price * 100),
@@ -88,7 +92,9 @@ const fields = (data: ProductInput) => ({
   specs: data.specs,
   inStock: data.inStock,
   featured: data.featured,
-});
+  docUrl: docUrl || null,
+  };
+};
 
 const takenSlugs = async () =>
   new Set((await withRetry(() => db.select({ slug: products.slug }).from(products))).map((r) => r.slug ?? ""));

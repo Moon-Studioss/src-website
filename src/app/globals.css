@@ -7,7 +7,7 @@
 :root {
   /* 6-token palette — the entire UI is built on these */
   --ink:    #16233A;   /* deep navy — text, headers */
-  --paper:  #FFFFFF;   /* backgrounds */
+  --paper:  #FAF6EC;   /* backgrounds: warm paper */
   --rule:   #DDE3EC;   /* grid lines, borders, dividers */
   --mute:   #5B6B84;   /* secondary text, labels */
   --go:     #0B6E4F;   /* accepted / success / WhatsApp */
@@ -18,7 +18,7 @@
   --hi:      #FFD43B;
   --hi-soft: #FFF4C2;
   --gold:    #E3A008;   /* golden-idea jackpot only */
-  --paper-2: #F5F7FA;   /* quiet section background */
+  --paper-2: #F3EEE2;   /* quiet section background (warm, sits on --paper) */
   --tab-h:   64px;      /* mobile bottom tab bar height */
 
   /* Category badge colours */

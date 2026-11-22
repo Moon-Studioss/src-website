@@ -28,6 +28,9 @@ export function parseSpecs(text: string): Spec[] {
 export const specsToText = (specs: Spec[] | null) => (specs ?? []).map((s) => `${s.label}: ${s.value}`).join("\n");
 export const parseLines = (text: string) => text.split("\n").map((l) => l.trim()).filter(Boolean);
 
+/** Product document link: empty, or an https Google Drive / Docs link. Anything else (e.g. javascript:) is refused. */
+export const isDocLink = (url: string) => url === "" || /^https:\/\/(drive|docs)\.google\.com\//.test(url);
+
 // ─── Price ───────────────────────────────────────────────────────
 /** % off, only when the owner entered a real MRP above the price. */
 export function percentOff(price: number, mrp: number | null): number {
@@ -80,6 +83,7 @@ export const CATEGORY_ART: Record<string, string> = {
   modules: "/categories/modules.webp",
   displays: "/categories/displays.webp",
   "motors-actuators": "/categories/motors-actuators.webp",
+  "3d-print": "/categories/3d-print.webp",
 };
 
 /** One random product photo per category, taken only from that category's own products.

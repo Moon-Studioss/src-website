@@ -1,12 +1,21 @@
 // Self-check for the store helpers. Run: node src/lib/store.check.ts
 import assert from "node:assert/strict";
 import type { Product } from "./db/schema.ts";
-import { filterSort, noFilters, orderMessage, parseSpecs, percentOff, pickTileImages, reconcileCart, searchProducts, slugify, uniqueSlug, whatsappLink } from "./store.ts";
+import { filterSort, isDocLink, noFilters, orderMessage, parseSpecs, percentOff, pickTileImages, reconcileCart, searchProducts, slugify, uniqueSlug, whatsappLink } from "./store.ts";
 
 const P = (o: Partial<Product>): Product => ({
   id: "x", name: "Item", description: null, price: 10000, category: null, images: [], inStock: true, featured: false,
-  slug: null, sku: null, brand: null, mrp: null, highlights: [], specs: [], createdAt: new Date("2026-01-01"), updatedAt: new Date("2026-01-01"), ...o,
+  slug: null, sku: null, brand: null, mrp: null, highlights: [], specs: [], docUrl: null, createdAt: new Date("2026-01-01"), updatedAt: new Date("2026-01-01"), ...o,
 });
+
+// Document links: only https Google Drive / Docs, or empty
+assert.ok(isDocLink(""));
+assert.ok(isDocLink("https://drive.google.com/file/d/abc/view?usp=sharing"));
+assert.ok(isDocLink("https://docs.google.com/document/d/abc/edit"));
+assert.ok(!isDocLink("javascript:alert(1)"));
+assert.ok(!isDocLink("http://drive.google.com/file/d/abc"));
+assert.ok(!isDocLink("https://drive.google.com.evil.com/x"));
+assert.ok(!isDocLink("https://example.com/file.pdf"));
 
 // Slugs: readable, and clashes get a number
 assert.equal(slugify("Motors & Actuators"), "motors-actuators");

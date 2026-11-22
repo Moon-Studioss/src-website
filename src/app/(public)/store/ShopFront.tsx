@@ -222,7 +222,8 @@ export function ShopFront() {
             <div className="mt-4 md:mt-8">
               <h2 className="font-display text-2xl md:text-4xl font-extrabold text-[var(--ink)] mb-3 md:mb-5"><span className="hl">Shop by category</span></h2>
               <CategoryCarousel items={ordered} tileImages={tileImages} />
-              <div className="hidden md:grid grid-cols-6 gap-4">
+              {/* One column per category (max 8 a row), so an added category does not wrap alone */}
+              <div className="hidden md:grid gap-4" style={{ gridTemplateColumns: `repeat(${Math.min(counted.length, 8)}, minmax(0, 1fr))` }}>
                 {counted.map(({ c, items }) => <CategoryTile key={c.id} c={c} count={items.length} photo={tileImages[c.id]} />)}
               </div>
             </div>

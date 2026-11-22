@@ -1,7 +1,60 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-# screenshots
+# NOTE: ignoring only stops NEW files. A file that is already tracked stays public
+# until it is removed from git with `git rm --cached <file>`.
+
+# ─── Secrets: never commit ──────────────────────────────────────────
+.env*
+!.env*.template
+!.env*.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.cert
+*.secret
+secrets/
+credentials*.json
+service-account*.json
+.npmrc
+.netrc
+
+# ─── Private: client / business / security docs ─────────────────────
+SECURITY_AUDIT.md
+/SRC-work-plan.pdf
+SRC - Website & Project Management System.pdf
+/*.pdf
+project-intake-design-brief.md
+future-work/
+docs/superpowers/
+
+# ─── AI agent instructions, tools and their output ──────────────────
+AGENTS.md
+CLAUDE.md
+.claude/
+.mcp.json
+.agents/
+.gemini/
+.cursor/
+.superpowers/
+.playwright-mcp/
+graphify-out/
+
+# ─── One-off / scratch scripts (may touch the database directly) ────
+/check_db.ts
+/fix_db.ts
+/sync_categories.ts
+/test-delete.ts
+/add_overdue_timer.ts
+*.scratch.*
+
+# ─── Raw design assets (the site only serves files from /public) ────
+/images/
 /screenshots
-# dependencies
+/Pasted image*
+/3dprint*.png
+
+# ─── Dependencies ───────────────────────────────────────────────────
 /node_modules
 /.pnp
 .pnp.*
@@ -11,57 +64,34 @@
 !.yarn/releases
 !.yarn/versions
 
-# testing
-/coverage
-
-# next.js
+# ─── Build output and caches ────────────────────────────────────────
 /.next/
 /out/
-
-# production
 /build
+/coverage
+.vercel
+*.tsbuildinfo
+next-env.d.ts
+.eslintcache
+.turbo/
 
-# misc
-.DS_Store
-*.pem
-
-# debug
+# ─── Logs and databases ─────────────────────────────────────────────
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
+*.sqlite
+*.sqlite3
+*.db
+*.dump
+*.sql.gz
 
-# env files
-.env*
-!.env*.template
-!.env*.example
-
-# vercel
-.vercel
-
-# typescript
-*.tsbuildinfo
-next-env.d.ts
-
-
-SRC - Website & Project Management System.pdf
-project-intake-design-brief.md
-
-# AI Agent Instructions / Logs
-AGENTS.md
-CLAUDE.md
-.agents/
-.gemini/
-
-# Scratch Scripts
-/check_db.ts
-/fix_db.ts
-/sync_categories.ts
-/test-delete.ts
-*.scratch.*
-# Security audit notes (do not publish)
-SECURITY_AUDIT.md
-future-work/FEATURES.txt
-
-# Client payment plan (private)
-/SRC-work-plan.pdf
+# ─── OS / editor junk ───────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
+*.swp
+*~

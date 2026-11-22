@@ -93,6 +93,7 @@ export const products = pgTable("products", {
   mrp:         integer("mrp"),                          // paise; only set when there is a real MRP to show
   highlights:  jsonb("highlights").$type<string[]>().default([]),
   specs:       jsonb("specs").$type<{ label: string; value: string }[]>().default([]),
+  docUrl:      text("doc_url"),                         // Google Drive link to a product document; download icon shows only when set
   createdAt:   timestamp("created_at").defaultNow().notNull(),
   updatedAt:   timestamp("updated_at").defaultNow().notNull(),
 });

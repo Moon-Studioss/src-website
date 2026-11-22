@@ -7,7 +7,7 @@ import {
 } from "./actions";
 import { Package, Tag, Plus, Trash2, CheckCircle2, XCircle, Star, StarOff, X, ChevronDown, Check, Copy } from "lucide-react";
 import type { Product, ProductCategory } from "@/lib/db/schema";
-import { parseLines, parseSpecs, specsToText } from "@/lib/store";
+import { isDocLink, parseLines, parseSpecs, specsToText } from "@/lib/store";
 
 type Props = {
   initialProducts: Product[];
@@ -16,7 +16,7 @@ type Props = {
 
 const emptyForm = {
   name: "", description: "", price: "", mrp: "", category: "", brand: "", sku: "",
-  highlights: "", specs: "", images: "", inStock: true, featured: false,
+  highlights: "", specs: "", images: "", inStock: true, featured: false, docUrl: "",
 };
 
 const fieldLabel = "block text-xs font-semibold text-[var(--mute)] mb-1.5 uppercase tracking-wider";
@@ -118,6 +118,7 @@ export function StoreAdminClient({ initialProducts, initialCategories }: Props) 
     images: (p.images as string[] ?? []).join("\n"),
     inStock: p.inStock,
     featured: p.featured,
+    docUrl: p.docUrl ?? "",
   });
   const openEdit = (p: Product) => { setEditingProduct(p); setForm(formFrom(p)); setShowForm(true); };
   // Start a new product from an existing one (SKU is unique per part, so it is cleared)
@@ -134,9 +135,11 @@ export function StoreAdminClient({ initialProducts, initialCategories }: Props) 
     setLinkVal(""); setLinkOpen(false);
   };
 
+  const docBad = !isDocLink(form.docUrl.trim());
+
   const handleSave = () => {
     const priceNum = parseFloat(form.price);
-    if (!form.name.trim() || isNaN(priceNum) || priceNum <= 0) return;
+    if (!form.name.trim() || isNaN(priceNum) || priceNum <= 0 || docBad) return;
     const mrpNum = parseFloat(form.mrp);
     const data = {
       name: form.name.trim(),
@@ -151,12 +154,13 @@ export function StoreAdminClient({ initialProducts, initialCategories }: Props) 
       specs: parseSpecs(form.specs),
       inStock: form.inStock,
       featured: form.featured,
+      docUrl: form.docUrl.trim(),
     };
     startTransition(async () => {
       if (editingProduct) {
         await updateProduct(editingProduct.id, data);
         setProducts(prev => prev.map(p => p.id === editingProduct.id
-          ? { ...p, ...data, price: Math.round(priceNum * 100), mrp: data.mrp && data.mrp > priceNum ? Math.round(data.mrp * 100) : null, brand: data.brand.trim() || null, sku: data.sku.trim() || null, category: data.category || null, description: data.description || null, updatedAt: new Date() }
+          ? { ...p, ...data, price: Math.round(priceNum * 100), mrp: data.mrp && data.mrp > priceNum ? Math.round(data.mrp * 100) : null, brand: data.brand.trim() || null, sku: data.sku.trim() || null, category: data.category || null, description: data.description || null, docUrl: data.docUrl || null, updatedAt: new Date() }
           : p));
       } else {
         await addProduct(data);
@@ -500,6 +504,20 @@ export function StoreAdminClient({ initialProducts, initialCategories }: Props) 
                   placeholder={"Operating voltage: 5V\nDigital pins: 14"} rows={4}
                   className={`${fieldInput} resize-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden`} style={{ borderColor: "var(--rule)" }} />
               </div>
+              {/* Product document: students get a download icon that opens this Drive link */}
+              <div>
+                <label htmlFor="doc-url" className={fieldLabel}>Document link (Google Drive, optional)</label>
+                <input id="doc-url" type="url" inputMode="url" value={form.docUrl}
+                  onChange={e => setForm(f => ({ ...f, docUrl: e.target.value }))}
+                  placeholder="https://drive.google.com/file/d/..."
+                  aria-invalid={docBad} aria-describedby="doc-url-hint"
+                  className={fieldInput} style={{ borderColor: docBad ? "#B42318" : "var(--rule)" }} />
+                <p id="doc-url-hint" className="mt-1 text-xs" style={{ color: docBad ? "#B42318" : "var(--mute)" }}>
+                  {docBad
+                    ? "Paste a Google Drive or Google Docs link (starts with https://drive.google.com/ or https://docs.google.com/)."
+                    : "In Drive, set sharing to \"Anyone with the link\", or students will see \"Request access\"."}
+                </p>
+              </div>
 
               {/* Photos: the first one is the main photo */}
               <div>
@@ -564,7 +582,7 @@ export function StoreAdminClient({ initialProducts, initialCategories }: Props) 
               </button>
               <button
                 onClick={handleSave}
-                disabled={!form.name.trim() || !form.price || isPending}
+                disabled={!form.name.trim() || !form.price || docBad || isPending}
                 className="press px-6 py-2 text-sm font-bold bg-[var(--hi)] text-[var(--ink)] rounded-lg hover:opacity-90 disabled:opacity-40 transition-all shadow-sm"
               >
                 {isPending ? "Saving..." : editingProduct ? "Save Changes" : "Add Product"}

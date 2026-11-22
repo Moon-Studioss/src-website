@@ -1,6 +1,6 @@
 "use client";
 
-import { Package, Plus, Minus, Star } from "lucide-react";
+import { Download, Package, Plus, Minus, Star } from "lucide-react";
 import type { Product } from "@/lib/db/schema";
 import { formatPrice } from "@/lib/utils/helpers";
 import { useStore } from "./StoreContext";
@@ -29,6 +29,25 @@ function InfoButton({ product, className }: { product: Product; className: strin
     >
       i
     </button>
+  );
+}
+
+// Download icon: opens the product document (a Google Drive link) in a new tab.
+// Only rendered when the admin added a link. Stops the click so the card does not flip.
+function DocButton({ product }: { product: Product }) {
+  if (!product.docUrl) return null;
+  return (
+    <a
+      href={product.docUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label={`Product document for ${product.name} (opens Google Drive)`}
+      title="Product document"
+      onClick={(e) => e.stopPropagation()}
+      className="press relative shrink-0 grid place-items-center w-7 h-7 rounded-full bg-[var(--ink)] text-white shadow-md before:content-[''] before:absolute before:-inset-2"
+    >
+      <Download size={15} strokeWidth={2.5} />
+    </a>
   );
 }
 
@@ -114,6 +133,7 @@ export function ProductCard({ product }: { product: Product }) {
               {product.inStock ? "In stock" : "Out of stock"}
             </p>
             <InfoButton product={product} className="" />
+            <DocButton product={product} />
           </div>
           <div className="mt-auto pt-2 flex items-center justify-between gap-2">
             <p className="font-bold leading-none">{formatPrice(product.price)}</p>

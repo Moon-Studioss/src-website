@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MessageCircle, Package, Plus, X } from "lucide-react";
+import { Download, MessageCircle, Package, Plus, X } from "lucide-react";
 import type { Product } from "@/lib/db/schema";
 import { inr, percentOff, whatsappLink } from "@/lib/store";
 import { useStore, WHATSAPP_NUMBER } from "./StoreContext";
@@ -145,12 +145,23 @@ function Body({ product }: { product: Product }) {
               </ul>
             )}
 
+            {product.docUrl && (
+              <a
+                href={product.docUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="press mt-4 flex w-fit items-center gap-2 h-10 px-4 rounded-full bg-[var(--ink)] text-white text-sm font-semibold"
+              >
+                <Download size={16} /> Product document
+              </a>
+            )}
+
             {WHATSAPP_NUMBER && (
               <a
                 href={whatsappLink(WHATSAPP_NUMBER, `Hi! I have a question about ${product.name}${product.sku ? ` (SKU: ${product.sku})` : ""}.`)}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-[var(--ink)] underline underline-offset-4"
+                className="mt-4 flex w-fit items-center gap-2 text-sm font-semibold text-[var(--ink)] underline underline-offset-4"
               >
                 <MessageCircle size={16} /> Ask about this part
               </a>
