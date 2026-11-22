@@ -33,20 +33,7 @@ npm run dev                  # http://localhost:3000
 
 ### Environment variables
 
-Put these in `.env.local`. That file is git-ignored, so **never commit real values**.
-
-| Variable | What it is for |
-|---|---|
-| `DATABASE_URL` | PostgreSQL connection string |
-| `JWT_SECRET` | Long random string used to sign admin sessions |
-| `ADMIN_EMAIL`, `ADMIN_PASSWORD` | First admin login (change the password after the first sign-in) |
-| `UPLOADTHING_TOKEN` | Uploadthing API token |
-| `CLEANUP_SECRET` | Shared secret for the scheduled clean-up job |
-| `RESEND_API_KEY`, `EMAIL_FROM`, `OWNER_EMAIL` | Email notifications (optional; emails are skipped when unset) |
-| `NEXT_PUBLIC_APP_URL` | Public site URL, used in email links |
-| `NEXT_PUBLIC_WHATSAPP_NUMBER` | WhatsApp number that store orders are sent to (country code, digits only) |
-
-Anything starting with `NEXT_PUBLIC_` is visible in the browser, so never put a secret in one.
+Copy `.env.example` to `.env.local` and fill in your own values. `.env.local` is git-ignored, so never commit it.
 
 ## Scripts
 
