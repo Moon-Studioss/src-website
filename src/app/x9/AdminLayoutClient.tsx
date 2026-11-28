@@ -4,7 +4,8 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { adminLogout } from "./login/actions";
 import { SettingsModal } from "@/components/SettingsModal";
-import { FolderKanban, Store, Printer, LogOut } from "lucide-react";
+import { FolderKanban, Store, LogOut } from "lucide-react";
+import { PrintIcon } from "@/components/PrintIcon";
 
 export function AdminLayoutClient({ children, storageWidget }: { children: React.ReactNode, storageWidget?: React.ReactNode }) {
   const pathname = usePathname();
@@ -65,7 +66,7 @@ export function AdminLayoutClient({ children, storageWidget }: { children: React
           {[
             { href: "/x9", label: "Projects", icon: FolderKanban, active: pathname === "/x9" || (/^\/x9\/[^/]+$/.test(pathname) && !pathname.startsWith("/x9/store") && pathname !== "/x9/3d-print") },
             { href: "/x9/store", label: "Store", icon: Store, active: pathname.startsWith("/x9/store") },
-            { href: "/x9/3d-print", label: "3D Print", icon: Printer, active: pathname === "/x9/3d-print" },
+            { href: "/x9/3d-print", label: "3D Print", icon: PrintIcon, active: pathname === "/x9/3d-print" },
           ].map(({ href, label, icon: Icon, active }) => (
             <li key={label} className="flex-1 h-full">
               <Link href={href} aria-current={active ? "page" : undefined} className="press flex flex-col items-center justify-end gap-1 pb-2 h-full w-full text-[11px] font-medium" style={{ color: active ? "var(--ink)" : "var(--mute)" }}>

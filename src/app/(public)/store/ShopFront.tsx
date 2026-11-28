@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ComponentType } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { ArrowRight, Cpu, IndianRupee, MessageCircle, PackageCheck, Printer, ShoppingCart } from "lucide-react";
+import { ArrowRight, Cpu, IndianRupee, MessageCircle, PackageCheck, ShoppingCart } from "lucide-react";
 import type { Product, ProductCategory } from "@/lib/db/schema";
 import { CATEGORY_ART, filterSort, noFilters, searchProducts, sectionOf, type Section } from "@/lib/store";
+import { PrintIcon } from "@/components/PrintIcon";
 import { useStore } from "./StoreContext";
 import { CatalogView } from "./CatalogView";
 import { ProductCard } from "./ProductCard";
@@ -20,9 +21,9 @@ const STEPS = [
 ];
 
 // The two store tabs. Each swaps the heading and line under it; products are split by their category's section.
-const SECTIONS: { id: Section; label: string; icon: typeof Cpu; title: string; sub: string }[] = [
+const SECTIONS: { id: Section; label: string; icon: ComponentType<{ size?: number; strokeWidth?: number }>; title: string; sub: string }[] = [
   { id: "parts", label: "Components", icon: Cpu, title: "Parts for your project", sub: "Sensors, boards and modules." },
-  { id: "3d", label: "3D Print", icon: Printer, title: "3D printing for your project", sub: "Printers, filament and printed parts." },
+  { id: "3d", label: "3D Print", icon: PrintIcon, title: "3D printing for your project", sub: "Printers, filament and printed parts." },
 ];
 
 // Pill switch above the heading. ?s=3d keeps the tab in the URL (shareable, survives refresh);
