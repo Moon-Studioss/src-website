@@ -1,7 +1,7 @@
 // Self-check for the store helpers. Run: node src/lib/store.check.ts
 import assert from "node:assert/strict";
 import type { Product } from "./db/schema.ts";
-import { filterSort, isDocLink, noFilters, orderMessage, parseSpecs, percentOff, pickTileImages, reconcileCart, searchProducts, slugify, suggestProducts, uniqueSlug, whatsappLink } from "./store.ts";
+import { filterSort, isDocLink, noFilters, orderMessage, parseSpecs, percentOff, pickTileImages, reconcileCart, searchProducts, sectionOf, slugify, suggestProducts, uniqueSlug, whatsappLink } from "./store.ts";
 
 const P = (o: Partial<Product>): Product => ({
   id: "x", name: "Item", description: null, price: 10000, category: null, images: [], inStock: true, featured: false,
@@ -82,5 +82,12 @@ for (let i = 0; i < 200; i++) { // never a photo from another category, and ever
   assert.ok(["s1.jpg", "s2.jpg"].includes(t.c1) && t.c2 === "m1.jpg");
 }
 assert.equal(new Set(Array.from({ length: 200 }, () => pickTileImages(cats, shop).c1)).size, 2);
+
+// Sections: a product follows its category; no category, or an unknown one, is Components
+const secCats = [{ name: "3D-Print", section: "3d" }, { name: "Sensors", section: "parts" }];
+assert.equal(sectionOf({ category: "3D-Print" }, secCats), "3d");
+assert.equal(sectionOf({ category: "Sensors" }, secCats), "parts");
+assert.equal(sectionOf({ category: null }, secCats), "parts");
+assert.equal(sectionOf({ category: "Deleted" }, secCats), "parts");
 
 console.log("store.check: ok");

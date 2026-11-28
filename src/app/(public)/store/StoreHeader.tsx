@@ -142,8 +142,10 @@ export function StoreHeader() {
   const q = useSearchParams().get("q") ?? "";
 
   const inCategory = (name: string) => products.some((p) => p.category === name);
-  const tabs = [{ href: "/store", label: "All parts", active: pathname === "/store" }]
-    .concat(categories.filter((c) => c.slug && inCategory(c.name)).map((c) => ({ href: `/store/c/${c.slug}`, label: c.name, active: pathname === `/store/c/${c.slug}` })));
+  // Inside a category the strip lists only that store tab's categories (Components or 3D Print)
+  const is3d = categories.find((c) => pathname === `/store/c/${c.slug}`)?.section === "3d";
+  const tabs = [is3d ? { href: "/store?s=3d", label: "All 3D Print", active: false } : { href: "/store", label: "All parts", active: pathname === "/store" }]
+    .concat(categories.filter((c) => c.slug && c.section === (is3d ? "3d" : "parts") && inCategory(c.name)).map((c) => ({ href: `/store/c/${c.slug}`, label: c.name, active: pathname === `/store/c/${c.slug}` })));
 
   const chip = (active: boolean) =>
     `press shrink-0 h-9 px-4 rounded-full text-sm font-semibold border grid place-items-center transition-colors ${

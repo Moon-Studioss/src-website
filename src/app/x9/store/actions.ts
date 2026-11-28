@@ -5,36 +5,52 @@ import { products, productCategories } from "@/lib/db/schema";
 import { eq, asc } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth";
-import { isDocLink, uniqueSlug, type Spec } from "@/lib/store";
+import { isDocLink, sectionOf, uniqueSlug, type Section, type Spec } from "@/lib/store";
 
 const refresh = () => {
   revalidatePath("/x9/store");
+  revalidatePath("/x9/3d-print");
   revalidatePath("/store");
 };
 
-// Creates the category (with its URL name) if it is new; no-op if it exists.
-async function ensureCategory(name: string) {
+const SECTION_NAME: Record<Section, string> = { parts: "Components", "3d": "3D Print" };
+
+// Creates the category (with its URL name) in this section if it is new; no-op if it exists here.
+// A name taken by the other tab is refused, or the product would silently land in that tab.
+async function ensureCategory(name: string, section: Section) {
   const n = name.trim();
   if (!n) return;
-  const rows = await withRetry(() => db.select({ name: productCategories.name, slug: productCategories.slug }).from(productCategories));
-  if (rows.some((r) => r.name === n)) return;
+  const rows = await withRetry(() => db.select({ name: productCategories.name, slug: productCategories.slug, section: productCategories.section }).from(productCategories));
+  const existing = rows.find((r) => r.name === n);
+  if (existing) {
+    if (sectionOf({ category: n }, rows) !== section) throw new Error(`"${n}" is a ${SECTION_NAME[section === "3d" ? "parts" : "3d"]} category. Pick another name.`);
+    return;
+  }
   const slug = uniqueSlug(n, new Set(rows.map((r) => r.slug ?? "")));
-  const [created] = await withRetry(() => db.insert(productCategories).values({ name: n, slug }).onConflictDoNothing().returning());
+  const [created] = await withRetry(() => db.insert(productCategories).values({ name: n, slug, section }).onConflictDoNothing().returning());
   return created;
+}
+
+/** Products and categories of one store tab, for that tab's admin page. */
+export async function getSection(section: Section) {
+  await requireAdmin();
+  const [allProducts, allCategories] = await Promise.all([
+    withRetry(() => db.select().from(products).orderBy(asc(products.name))),
+    withRetry(() => db.select().from(productCategories).orderBy(asc(productCategories.name))),
+  ]);
+  return {
+    products: allProducts.filter((p) => sectionOf(p, allCategories) === section),
+    categories: allCategories.filter((c) => c.section === section),
+  };
 }
 
 // ─── Category Actions ─────────────────────────────────────────────
 
-export async function getCategories() {
-  await requireAdmin();
-  return withRetry(() => db.select().from(productCategories).orderBy(asc(productCategories.name)));
-}
-
-export async function addCategory(name: string) {
+export async function addCategory(name: string, section: Section) {
   await requireAdmin();
   const trimmed = name.trim();
   if (!trimmed) return { error: "Category name is required" };
-  const category = await ensureCategory(trimmed);
+  const category = await ensureCategory(trimmed, section);
   if (!category) return { error: "Category already exists" };
   refresh();
   return { success: true, category };
@@ -53,11 +69,6 @@ export async function deleteCategory(id: string) {
 }
 
 // ─── Product Actions ──────────────────────────────────────────────
-
-export async function getProducts() {
-  await requireAdmin();
-  return withRetry(() => db.select().from(products).orderBy(asc(products.name)));
-}
 
 type ProductInput = {
   name: string;
@@ -99,16 +110,16 @@ const fields = (data: ProductInput) => {
 const takenSlugs = async () =>
   new Set((await withRetry(() => db.select({ slug: products.slug }).from(products))).map((r) => r.slug ?? ""));
 
-export async function addProduct(data: ProductInput) {
+export async function addProduct(data: ProductInput, section: Section) {
   await requireAdmin();
-  await ensureCategory(data.category);
+  await ensureCategory(data.category, section);
   await withRetry(async () => db.insert(products).values({ ...fields(data), slug: uniqueSlug(data.name, await takenSlugs()) }));
   refresh();
 }
 
-export async function updateProduct(id: string, data: ProductInput) {
+export async function updateProduct(id: string, data: ProductInput, section: Section) {
   await requireAdmin();
-  await ensureCategory(data.category);
+  await ensureCategory(data.category, section);
   // The slug is set once so links keep working after a rename; fill it in only if missing.
   const [current] = await withRetry(() => db.select({ slug: products.slug }).from(products).where(eq(products.id, id)));
   const slug = current?.slug ?? uniqueSlug(data.name, await takenSlugs());

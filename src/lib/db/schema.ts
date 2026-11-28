@@ -74,6 +74,7 @@ export const productCategories = pgTable("product_categories", {
   name:      text("name").notNull().unique(),
   slug:      text("slug").unique(),                      // URL name, set once on create (see lib/store.ts)
   image:     text("image"),                              // tile photo URL
+  section:   text("section").notNull().default("parts"),  // store tab: "parts" (Components) or "3d" (3D Print)
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

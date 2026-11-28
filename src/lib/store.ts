@@ -1,5 +1,5 @@
 // Pure store helpers (no DB, no React) so they can be self-checked: node src/lib/store.check.ts
-import type { Product } from "./db/schema.ts";
+import type { Product, ProductCategory } from "./db/schema.ts";
 
 export const inr = (paise: number) => `₹${(paise / 100).toLocaleString("en-IN")}`;
 
@@ -88,6 +88,13 @@ export function suggestProducts(items: Product[], q: string, max = 6): Product[]
     .slice(0, max)
     .map((x) => x.p);
 }
+
+// ─── Sections ────────────────────────────────────────────────────
+/** The store has two tabs: Components and 3D Print. A product takes its category's section;
+ *  uncategorized products (or ones whose category was deleted) count as Components. */
+export type Section = "parts" | "3d";
+export const sectionOf = (p: Pick<Product, "category">, categories: Pick<ProductCategory, "name" | "section">[]): Section =>
+  categories.find((c) => c.name === p.category)?.section === "3d" ? "3d" : "parts";
 
 // ─── Category tiles ──────────────────────────────────────────────
 /** Cut-out artwork (public/categories) for the shop-front tiles, keyed by category slug.

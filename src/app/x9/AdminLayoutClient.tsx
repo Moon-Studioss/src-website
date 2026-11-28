@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { adminLogout } from "./login/actions";
 import { SettingsModal } from "@/components/SettingsModal";
-import { FolderKanban, Store, LogOut } from "lucide-react";
+import { FolderKanban, Store, Printer, LogOut } from "lucide-react";
 
 export function AdminLayoutClient({ children, storageWidget }: { children: React.ReactNode, storageWidget?: React.ReactNode }) {
   const pathname = usePathname();
@@ -36,6 +36,9 @@ export function AdminLayoutClient({ children, storageWidget }: { children: React
             <Link href="/x9/store" className={`font-medium transition-colors pb-0.5 border-b-2 ${pathname.startsWith('/x9/store') ? 'border-[var(--hi)] ' : 'border-transparent '}${pathname.startsWith('/x9/store') ? 'text-[var(--ink)]' : 'text-[var(--mute)] hover:text-[var(--ink)]'}`}>
               Store
             </Link>
+            <Link href="/x9/3d-print" className={`font-medium transition-colors pb-0.5 border-b-2 ${pathname.startsWith('/x9/3d-print') ? 'border-[var(--hi)] text-[var(--ink)]' : 'border-transparent text-[var(--mute)] hover:text-[var(--ink)]'}`}>
+              3D Print
+            </Link>
           </nav>
 
           <div className="flex items-center z-10 gap-2 sm:gap-3">
@@ -60,8 +63,9 @@ export function AdminLayoutClient({ children, storageWidget }: { children: React
       <nav aria-label="Admin" className="sm:hidden fixed left-0 right-0 bottom-0 z-40 bg-white border-t" style={{ borderColor: "var(--rule)", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
         <ul className="flex items-end" style={{ height: "var(--tab-h)" }}>
           {[
-            { href: "/x9", label: "Projects", icon: FolderKanban, active: pathname === "/x9" || (/^\/x9\/[^/]+$/.test(pathname) && !pathname.startsWith("/x9/store")) },
+            { href: "/x9", label: "Projects", icon: FolderKanban, active: pathname === "/x9" || (/^\/x9\/[^/]+$/.test(pathname) && !pathname.startsWith("/x9/store") && pathname !== "/x9/3d-print") },
             { href: "/x9/store", label: "Store", icon: Store, active: pathname.startsWith("/x9/store") },
+            { href: "/x9/3d-print", label: "3D Print", icon: Printer, active: pathname === "/x9/3d-print" },
           ].map(({ href, label, icon: Icon, active }) => (
             <li key={label} className="flex-1 h-full">
               <Link href={href} aria-current={active ? "page" : undefined} className="press flex flex-col items-center justify-end gap-1 pb-2 h-full w-full text-[11px] font-medium" style={{ color: active ? "var(--ink)" : "var(--mute)" }}>

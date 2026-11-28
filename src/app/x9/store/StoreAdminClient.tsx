@@ -7,9 +7,10 @@ import {
 } from "./actions";
 import { Package, Tag, Plus, Trash2, CheckCircle2, XCircle, Star, StarOff, X, ChevronDown, Check, Copy } from "lucide-react";
 import type { Product, ProductCategory } from "@/lib/db/schema";
-import { isDocLink, parseLines, parseSpecs, specsToText } from "@/lib/store";
+import { isDocLink, parseLines, parseSpecs, specsToText, type Section } from "@/lib/store";
 
 type Props = {
+  section: Section;
   initialProducts: Product[];
   initialCategories: ProductCategory[];
 };
@@ -75,7 +76,7 @@ function CustomSelect({ value, onChange, options, placeholder = "Select...", cla
   );
 }
 
-export function StoreAdminClient({ initialProducts, initialCategories }: Props) {
+export function StoreAdminClient({ section, initialProducts, initialCategories }: Props) {
   const [products, setProducts] = useState<Product[]>(initialProducts);
   const [categories, setCategories] = useState<ProductCategory[]>(initialCategories);
   const [tab, setTab] = useState<"products" | "categories">("products");
@@ -86,6 +87,7 @@ export function StoreAdminClient({ initialProducts, initialCategories }: Props) 
   const [filterCat, setFilterCat] = useState("all");
   const [filterStock, setFilterStock] = useState("all");
   const [isPending, startTransition] = useTransition();
+  const [saveError, setSaveError] = useState("");
 
   // ─── Stats ──────────────────────────────────────────────────────
   const total = products.length;
@@ -104,7 +106,8 @@ export function StoreAdminClient({ initialProducts, initialCategories }: Props) 
   });
 
   // ─── Form helpers ─────────────────────────────────────────────────
-  const openAdd = () => { setEditingProduct(null); setForm(emptyForm); setShowForm(true); };
+  // 3D items always need a category: an uncategorized product shows under Components
+  const openAdd = () => { setEditingProduct(null); setForm({ ...emptyForm, category: section === "3d" ? (allAvailableCats[0] ?? "3D-Print") : "" }); setShowForm(true); };
   const formFrom = (p: Product) => ({
     name: p.name,
     description: p.description ?? "",
@@ -123,7 +126,7 @@ export function StoreAdminClient({ initialProducts, initialCategories }: Props) 
   const openEdit = (p: Product) => { setEditingProduct(p); setForm(formFrom(p)); setShowForm(true); };
   // Start a new product from an existing one (SKU is unique per part, so it is cleared)
   const openDuplicate = (p: Product) => { setEditingProduct(null); setForm({ ...formFrom(p), sku: "" }); setShowForm(true); };
-  const closeForm = () => { setShowForm(false); setEditingProduct(null); };
+  const closeForm = () => { setShowForm(false); setEditingProduct(null); setSaveError(""); };
 
   const imageList = parseLines(form.images);
   const setImageList = (list: string[]) => setForm(f => ({ ...f, images: list.join("\n") }));
@@ -136,10 +139,11 @@ export function StoreAdminClient({ initialProducts, initialCategories }: Props) 
   };
 
   const docBad = !isDocLink(form.docUrl.trim());
+  const catMissing = section === "3d" && !form.category.trim();
 
   const handleSave = () => {
     const priceNum = parseFloat(form.price);
-    if (!form.name.trim() || isNaN(priceNum) || priceNum <= 0 || docBad) return;
+    if (!form.name.trim() || isNaN(priceNum) || priceNum <= 0 || docBad || catMissing) return;
     const mrpNum = parseFloat(form.mrp);
     const data = {
       name: form.name.trim(),
@@ -157,17 +161,22 @@ export function StoreAdminClient({ initialProducts, initialCategories }: Props) 
       docUrl: form.docUrl.trim(),
     };
     startTransition(async () => {
+      setSaveError("");
+      try {
       if (editingProduct) {
-        await updateProduct(editingProduct.id, data);
+        await updateProduct(editingProduct.id, data, section);
         setProducts(prev => prev.map(p => p.id === editingProduct.id
           ? { ...p, ...data, price: Math.round(priceNum * 100), mrp: data.mrp && data.mrp > priceNum ? Math.round(data.mrp * 100) : null, brand: data.brand.trim() || null, sku: data.sku.trim() || null, category: data.category || null, description: data.description || null, docUrl: data.docUrl || null, updatedAt: new Date() }
           : p));
       } else {
-        await addProduct(data);
+        await addProduct(data, section);
         // Re-fetch by reloading state — server will revalidate
         window.location.reload();
       }
       closeForm();
+      } catch (e) {
+        setSaveError(e instanceof Error ? e.message : "Could not save. Please try again.");
+      }
     });
   };
 
@@ -192,8 +201,8 @@ export function StoreAdminClient({ initialProducts, initialCategories }: Props) 
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-[var(--ink)] tracking-tight">Store</h1>
-          <p className="text-sm text-[var(--mute)] mt-0.5">Manage products and categories</p>
+          <h1 className="text-2xl font-bold text-[var(--ink)] tracking-tight">{section === "3d" ? "3D Print" : "Store"}</h1>
+          <p className="text-sm text-[var(--mute)] mt-0.5">{section === "3d" ? "Manage the 3D Print tab of the store" : "Manage components and categories"}</p>
         </div>
         <button
           onClick={openAdd}
@@ -490,6 +499,7 @@ export function StoreAdminClient({ initialProducts, initialCategories }: Props) 
                     style={{ borderColor: "var(--rule)" }}
                   />
                 )}
+                {catMissing && <p className="text-xs" style={{ color: "#B42318" }}>Pick a category. 3D Print items need one.</p>}
               </div>
               {/* Highlights + specifications (shown in the product popup) */}
               <div>
@@ -572,7 +582,8 @@ export function StoreAdminClient({ initialProducts, initialCategories }: Props) 
                 </label>
               </div>
             </div>
-            <div className="flex gap-3 justify-end px-6 py-4 border-t bg-[var(--paper-2)] rounded-b-2xl" style={{ borderColor: "var(--rule)" }}>
+            <div className="flex flex-wrap items-center gap-3 justify-end px-6 py-4 border-t bg-[var(--paper-2)] rounded-b-2xl" style={{ borderColor: "var(--rule)" }}>
+              {saveError && <p role="alert" className="mr-auto text-sm" style={{ color: "#B42318" }}>{saveError}</p>}
               <button
                 onClick={closeForm}
                 className="px-4 py-2 text-sm font-semibold press border rounded-lg hover:bg-white shadow-sm text-[var(--ink)]"
@@ -582,7 +593,7 @@ export function StoreAdminClient({ initialProducts, initialCategories }: Props) 
               </button>
               <button
                 onClick={handleSave}
-                disabled={!form.name.trim() || !form.price || docBad || isPending}
+                disabled={!form.name.trim() || !form.price || docBad || catMissing || isPending}
                 className="press px-6 py-2 text-sm font-bold bg-[var(--hi)] text-[var(--ink)] rounded-lg hover:opacity-90 disabled:opacity-40 transition-all shadow-sm"
               >
                 {isPending ? "Saving..." : editingProduct ? "Save Changes" : "Add Product"}

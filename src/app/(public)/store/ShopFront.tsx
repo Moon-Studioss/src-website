@@ -3,9 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { ArrowRight, IndianRupee, MessageCircle, PackageCheck, ShoppingCart } from "lucide-react";
+import { ArrowRight, Cpu, IndianRupee, MessageCircle, PackageCheck, Printer, ShoppingCart } from "lucide-react";
 import type { Product, ProductCategory } from "@/lib/db/schema";
-import { CATEGORY_ART, filterSort, noFilters, searchProducts } from "@/lib/store";
+import { CATEGORY_ART, filterSort, noFilters, searchProducts, sectionOf, type Section } from "@/lib/store";
 import { useStore } from "./StoreContext";
 import { CatalogView } from "./CatalogView";
 import { ProductCard } from "./ProductCard";
@@ -18,6 +18,43 @@ const STEPS = [
   { icon: PackageCheck, title: "We confirm stock and delivery", sub: "Cost is shared in the chat" },
   { icon: IndianRupee, title: "Pay in the chat", sub: "We dispatch after payment" },
 ];
+
+// The two store tabs. Each swaps the heading and line under it; products are split by their category's section.
+const SECTIONS: { id: Section; label: string; icon: typeof Cpu; title: string; sub: string }[] = [
+  { id: "parts", label: "Components", icon: Cpu, title: "Parts for your project", sub: "Sensors, boards and modules." },
+  { id: "3d", label: "3D Print", icon: Printer, title: "3D printing for your project", sub: "Printers, filament and printed parts." },
+];
+
+// Pill switch above the heading. ?s=3d keeps the tab in the URL (shareable, survives refresh);
+// the native History API swaps it with no server round trip, like the product popup's ?p=.
+function SectionToggle({ section }: { section: Section }) {
+  const pick = (id: Section) => {
+    const params = new URLSearchParams(window.location.search);
+    if (id === "3d") params.set("s", "3d"); else params.delete("s");
+    const qs = params.toString();
+    window.history.replaceState(null, "", window.location.pathname + (qs ? `?${qs}` : ""));
+  };
+  return (
+    <div role="group" aria-label="Store section" className="relative grid grid-cols-2 w-full md:w-[24rem] h-12 md:h-14 p-1 rounded-full border border-[var(--rule)] bg-white shadow-[0_10px_30px_-22px_rgb(22_35_58/.5)]">
+      <span
+        aria-hidden
+        className="absolute inset-y-1 left-1 w-[calc(50%-0.25rem)] rounded-full bg-[var(--hi)] transition-transform duration-300 ease-[cubic-bezier(.22,1,.36,1)] motion-reduce:transition-none"
+        style={{ transform: section === "3d" ? "translateX(100%)" : "none" }}
+      />
+      {SECTIONS.map(({ id, label, icon: Icon }) => (
+        <button
+          key={id}
+          type="button"
+          aria-pressed={section === id}
+          onClick={() => pick(id)}
+          className={`press relative z-10 flex items-center justify-center gap-2 rounded-full text-sm md:text-base font-semibold outline-none focus-visible:ring-2 focus-visible:ring-[var(--ink)] transition-colors ${section === id ? "text-[var(--ink)]" : "text-[var(--mute)] hover:text-[var(--ink)]"}`}
+        >
+          <Icon size={18} strokeWidth={2.2} />{label}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 function Row({ title, items, href }: { title: string; items: Product[]; href?: string }) {
   if (items.length === 0) return null;
@@ -159,8 +196,11 @@ function CategoryCarousel({ items, tileImages }: { items: { c: ProductCategory }
 
 // /store: the shop front. With ?q= it shows search results instead.
 export function ShopFront() {
-  const { products, categories, tileImages } = useStore();
-  const q = (useSearchParams().get("q") ?? "").trim();
+  const { products: allProducts, categories, tileImages } = useStore();
+  const params = useSearchParams();
+  const q = (params.get("q") ?? "").trim();
+  const section: Section = params.get("s") === "3d" ? "3d" : "parts";
+  const copy = SECTIONS.find((s) => s.id === section)!;
 
   if (q) {
     return (
@@ -168,10 +208,13 @@ export function ShopFront() {
         key={q}
         title={`Results for “${q}”`}
         crumb={<Link href="/store" className="text-sm font-semibold text-[var(--mute)] hover:text-[var(--ink)]">← All parts</Link>}
-        products={searchProducts(products, q)}
+        products={searchProducts(allProducts, q)}
       />
     );
   }
+
+  // Everything below shows only this tab's products (search above covers both tabs)
+  const products = allProducts.filter((p) => sectionOf(p, categories) === section);
 
   const inStock = products.filter((p) => p.inStock);
   const featured = filterSort(inStock.filter((p) => p.featured), noFilters).slice(0, 8);
@@ -182,6 +225,8 @@ export function ShopFront() {
     .filter((x) => x.items.length > 0)
     .sort((a, b) => b.items.length - a.items.length);
 
+  const picker = counted.length > 1;
+
   // Phones start the carousel on Microcontrollers
   const ordered = [...counted].sort((a, b) => Number(/^microcontroller/i.test(b.c.name)) - Number(/^microcontroller/i.test(a.c.name)));
 
@@ -190,10 +235,13 @@ export function ShopFront() {
       {/* First screen: everything a new visitor needs, filling the space under the sticky header
           (navbar 3.5rem + search 4.3rem = 7.8rem; phones also lose the tab bar).
           The product rows below are what they scroll to. */}
-      <section className="grid-texture-faint flex items-center min-h-[calc(100svh-var(--tab-h)-7.85rem)] md:min-h-[calc(100svh-4.3rem)]">
+      {/* Top-aligned so the tab switch stays put when the other tab is shorter. A tab with only one
+          category has no picker, so it drops the full-screen height and its rows follow straight on. */}
+      <section className={`grid-texture-faint ${picker ? "min-h-[calc(100svh-var(--tab-h)-7.85rem)] md:min-h-[calc(100svh-4.3rem)]" : ""}`}>
         <div className="w-full max-w-6xl mx-auto px-4 md:px-6 py-4 md:py-10">
-          <h1 className="font-display text-4xl md:text-6xl font-extrabold text-[var(--ink)] leading-[1.02]">Parts for your project</h1>
-          <p className="mt-2 md:mt-3 text-[15px] text-[var(--mute)] md:text-lg max-w-[44ch]">Sensors, boards and modules. Add what you need and send the order on <span className="hl font-semibold text-[var(--ink)]">WhatsApp</span>.</p>
+          <SectionToggle section={section} />
+          <h1 className="mt-5 md:mt-8 font-display text-4xl md:text-6xl font-extrabold text-[var(--ink)] leading-[1.02]">{copy.title}</h1>
+          <p className="mt-2 md:mt-3 text-[15px] text-[var(--mute)] md:text-lg max-w-[44ch]">{copy.sub} Add what you need and send the order on <span className="hl font-semibold text-[var(--ink)]">WhatsApp</span>.</p>
 
           <ol className="relative mt-4 md:mt-8 grid grid-cols-4 gap-2 md:gap-6 rounded-3xl border border-[var(--rule)] bg-white/90 px-2 py-4 md:px-8 md:py-7 shadow-[0_18px_40px_-28px_rgb(22_35_58/.45)]">
             {/* dashed route through the centres of the four nodes */}
@@ -218,7 +266,8 @@ export function ShopFront() {
             ))}
           </ol>
 
-          {counted.length > 0 && (
+          {/* One category alone needs no picker: its row below already shows everything */}
+          {picker && (
             <div className="mt-4 md:mt-8">
               <h2 className="font-display text-2xl md:text-4xl font-extrabold text-[var(--ink)] mb-3 md:mb-5"><span className="hl">Shop by category</span></h2>
               <CategoryCarousel items={ordered} tileImages={tileImages} />
@@ -233,11 +282,12 @@ export function ShopFront() {
 
       <div className="max-w-6xl mx-auto px-4 md:px-6">
         {products.length === 0 ? (
-          <p className="mt-16 text-center text-[var(--mute)]">No parts yet. Check back soon.</p>
+          <p className="mt-16 text-center text-[var(--mute)]">{section === "3d" ? "No 3D Print items yet." : "No parts yet."} Check back soon.</p>
         ) : (
           <>
             <Row title="Popular right now" items={featured} />
-            <Row title="New arrivals" items={newest} />
+            {/* With one category its own row already lists every item, newest included */}
+            {picker && <Row title="New arrivals" items={newest} />}
             {counted.slice(0, 6).map(({ c, items }) => (
               <Row key={c.id} title={c.name} items={filterSort(items, noFilters).slice(0, 8)} href={`/store/c/${c.slug}`} />
             ))}

@@ -22,7 +22,7 @@ export function CategoryView({ slug }: { slug: string }) {
       title={category.name}
       crumb={
         <nav aria-label="Breadcrumb" className="text-sm text-[var(--mute)]">
-          <Link href="/store" className="font-semibold hover:text-[var(--ink)]">Store</Link> <span aria-hidden>›</span> <span>{category.name}</span>
+          <Link href={category.section === "3d" ? "/store?s=3d" : "/store"} className="font-semibold hover:text-[var(--ink)]">{category.section === "3d" ? "3D Print" : "Store"}</Link> <span aria-hidden>›</span> <span>{category.name}</span>
         </nav>
       }
       products={products.filter((p) => p.category === category.name)}
